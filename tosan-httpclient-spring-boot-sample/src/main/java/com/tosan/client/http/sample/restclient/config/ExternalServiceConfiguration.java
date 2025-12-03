@@ -1,6 +1,6 @@
 package com.tosan.client.http.sample.restclient.config;
 
-import com.tosan.client.http.restclient.starter.configuration.AbstractHttpClientConfiguration;
+import com.tosan.client.http.restclient.starter.configuration.AbstractRestClientConfiguration;
 import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
 import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
 import com.tosan.client.http.sample.restclient.exception.ExceptionHandler;
@@ -15,7 +15,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  * @since 8/6/2022
  */
 @Configuration
-public class ExternalServiceConfiguration extends AbstractHttpClientConfiguration {
+public class ExternalServiceConfiguration extends AbstractRestClientConfiguration {
 
     public static final String SERVICE_NAME = "custom-web-service1";
 

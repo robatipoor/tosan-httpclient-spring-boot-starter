@@ -1,4 +1,4 @@
-package com.tosan.client.http.sample.client;
+package com.tosan.client.http.sample.feignclient;
 
 import com.tosan.client.http.sample.server.api.controller.CustomServerRestController;
 import com.tosan.client.http.sample.server.api.exception.InvalidParameterException;
@@ -22,7 +22,7 @@ import org.springframework.http.HttpHeaders;
  * @since 4/18/2021
  */
 @Slf4j
-@SpringBootApplication(scanBasePackages = {"com.tosan.client.http.sample.client", "com.tosan.client.http.sample.server.api"})
+@SpringBootApplication(scanBasePackages = {"com.tosan.client.http.sample.feignclient", "com.tosan.client.http.sample.server.api"})
 public class RestClientSpringBootApplication implements CommandLineRunner {
 
     @Autowired

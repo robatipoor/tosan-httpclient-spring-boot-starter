@@ -1,4 +1,4 @@
-package com.tosan.client.http.sample.client.config;
+package com.tosan.client.http.sample.feignclient.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;

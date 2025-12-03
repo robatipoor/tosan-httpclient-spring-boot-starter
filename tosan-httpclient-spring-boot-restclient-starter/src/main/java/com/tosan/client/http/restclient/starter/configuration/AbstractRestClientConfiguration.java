@@ -33,14 +33,14 @@ import java.util.Collections;
 import java.util.List;
 
 
-public abstract class AbstractHttpClientConfiguration implements DisposableBean {
+public abstract class AbstractRestClientConfiguration implements DisposableBean {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractHttpClientConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractRestClientConfiguration.class);
     private final ObservationRegistry observationRegistry;
     private final List<CloseableHttpClient> closeableHttpClients = Collections.synchronizedList(new ArrayList<>());
     private final HttpLoggingInterceptorUtil httpLoggingInterceptorUtil;
 
-    protected AbstractHttpClientConfiguration(ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
+    protected AbstractRestClientConfiguration(ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
         this.observationRegistry = observationRegistry;
         this.httpLoggingInterceptorUtil = httpLoggingInterceptorUtil;
     }
