@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.HashSet;
 
 @Configuration
-public class ExternalHttpClientAutoConfiguration {
+public class ExternalRestClientAutoConfiguration {
 
     @Bean({"http-client-util-regex-replace-helper"})
     @ConditionalOnMissingBean(name = "http-client-util-regex-replace-helper")

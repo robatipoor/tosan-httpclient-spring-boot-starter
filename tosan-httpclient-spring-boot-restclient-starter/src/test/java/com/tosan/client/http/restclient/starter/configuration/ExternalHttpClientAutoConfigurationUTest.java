@@ -14,21 +14,21 @@ public class ExternalHttpClientAutoConfigurationUTest {
 
     @Test
     public void jsonReplaceHelperDecider() {
-        this.contextRunner.withUserConfiguration(ExternalHttpClientAutoConfiguration.class)
+        this.contextRunner.withUserConfiguration(ExternalRestClientAutoConfiguration.class)
                 .withUserConfiguration(MaskBeanConfiguration.class)
                 .run(ctx -> assertThat(ctx).hasSingleBean(JsonReplaceHelperDecider.class));
     }
 
     @Test
     public void httpLoggingInterceptorUtil() {
-        this.contextRunner.withUserConfiguration(ExternalHttpClientAutoConfiguration.class)
+        this.contextRunner.withUserConfiguration(ExternalRestClientAutoConfiguration.class)
                 .withUserConfiguration(MaskBeanConfiguration.class)
                 .run(ctx -> assertThat(ctx).hasSingleBean(HttpLoggingInterceptorUtil.class));
     }
 
     @Test
     public void secureParametersConfig() {
-        this.contextRunner.withUserConfiguration(ExternalHttpClientAutoConfiguration.class)
+        this.contextRunner.withUserConfiguration(ExternalRestClientAutoConfiguration.class)
                 .withUserConfiguration(MaskBeanConfiguration.class)
                 .run(ctx -> assertThat(ctx).hasSingleBean(SecureParametersConfig.class));
     }
