@@ -18,7 +18,7 @@ public class ExternalServiceInvoker implements DisposableBean {
         this.httpClientProperties = httpClientProperties;
     }
 
-    public RestClient getRestClient() {
+    public RestClient getClient() {
         return this.clientService.getRestClient();
     }
 

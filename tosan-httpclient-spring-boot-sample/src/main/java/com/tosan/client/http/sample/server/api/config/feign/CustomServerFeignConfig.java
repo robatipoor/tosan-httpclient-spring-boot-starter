@@ -8,6 +8,7 @@ import com.tosan.client.http.sample.server.api.model.Context;
 import com.tosan.client.http.starter.configuration.AbstractFeignConfiguration;
 import com.tosan.client.http.starter.impl.feign.CustomErrorDecoderConfig;
 import com.tosan.client.http.starter.impl.feign.ExceptionExtractType;
+import com.tosan.client.http.starter.impl.feign.ExternalServiceInvoker;
 import com.tosan.client.http.starter.impl.feign.exception.TosanWebServiceRuntimeException;
 import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
 import feign.*;
@@ -37,8 +38,8 @@ public class CustomServerFeignConfig extends AbstractFeignConfiguration {
     }
 
     @Bean(SERVICE_NAME)
-    public CustomServerRestController feignClientBean(Environment environment) {
-        return createFeignClient(environment, CustomServerRestController.PATH, CustomServerRestController.class);
+    public ExternalServiceInvoker<CustomServerRestController> serviceInvokerBean(Environment environment) {
+        return createServiceInvoker(environment, CustomServerRestController.PATH, CustomServerRestController.class);
     }
 
     @Override

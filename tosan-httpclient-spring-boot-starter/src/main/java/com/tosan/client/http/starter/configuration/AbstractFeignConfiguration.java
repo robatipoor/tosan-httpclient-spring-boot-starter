@@ -8,6 +8,8 @@ import com.tosan.client.http.core.HttpClientProperties;
 import com.tosan.client.http.core.factory.ConfigurableApacheHttpClientFactory;
 import com.tosan.client.http.starter.impl.feign.CustomErrorDecoder;
 import com.tosan.client.http.starter.impl.feign.CustomErrorDecoderConfig;
+import com.tosan.client.http.starter.impl.feign.FeignBuilder;
+import com.tosan.client.http.starter.impl.feign.ExternalServiceInvoker;
 import com.tosan.client.http.starter.impl.feign.exception.FeignConfigurationException;
 import com.tosan.client.http.starter.impl.feign.logger.HttpFeignClientLogger;
 import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
@@ -26,26 +28,22 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.http.ContentType;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.cloud.openfeign.support.ResponseEntityDecoder;
 import org.springframework.cloud.openfeign.support.SpringMvcContract;
 import org.springframework.core.env.Environment;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.tosan.client.http.core.Constants.*;
 
-public abstract class AbstractFeignConfiguration implements DisposableBean {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(AbstractFeignConfiguration.class);
+public abstract class AbstractFeignConfiguration {
+
     private final ObservationRegistry observationRegistry;
-    private final List<CloseableHttpClient> closeableHttpClients = Collections.synchronizedList(new ArrayList<>());
     private final ObjectMapper defaultObjectMapper = createDefaultObjectMapper();
     private final JsonReplaceHelperDecider jsonReplaceHelperDecider;
 
@@ -86,8 +84,7 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
         return factory.createBuilder().build();
     }
 
-    private Client wrapHttpClient(CloseableHttpClient closeableHttpClient) {
-        closeableHttpClients.add(closeableHttpClient);
+    protected Client wrapHttpClient(CloseableHttpClient closeableHttpClient) {
         return new ApacheHttp5Client(closeableHttpClient);
     }
 
@@ -138,12 +135,11 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
         return List.of(new MicrometerObservationCapability(observationRegistry, convention));
     }
 
-    private Feign.Builder feignBuilder(HttpClientProperties httpClientProperties) {
+    private FeignBuilder feignBuilder(HttpClientProperties httpClientProperties) {
+        CloseableHttpClient closeableHttpClient = createFeignHttpClient(httpClientProperties);
         ObjectMapper objectMapper = createObjectMapper();
         Feign.Builder feignBuilder = Feign.builder()
-                .client(wrapHttpClient(createFeignHttpClient(
-                        httpClientProperties
-                )))
+                .client(wrapHttpClient(closeableHttpClient))
                 .options(createRequestOptions(httpClientProperties))
                 .encoder(createEncoder(objectMapper))
                 .decoder(createDecoder(objectMapper))
@@ -154,7 +150,7 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
                 .logger(createLogger())
                 .logLevel(getLogLevel());
         createCapabilities(observationRegistry).forEach(feignBuilder::addCapability);
-        return feignBuilder;
+        return new FeignBuilder(feignBuilder, closeableHttpClient);
     }
 
     protected void validateProperties(HttpClientProperties properties) {
@@ -202,28 +198,17 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
         return controllerPath != null ? baseUrl + controllerPath : baseUrl;
     }
 
-    protected final <T> T createFeignClient(Environment environment, String controllerPath, Class<T> clientType) {
+    protected final <T> ExternalServiceInvoker<T> createServiceInvoker(Environment environment, String controllerPath, Class<T> clientType) {
         HttpClientProperties properties = loadHttpClientProperties(environment);
         validateProperties(properties);
-        Feign.Builder builder = feignBuilder(properties);
-        return builder.target(clientType, buildTargetUrl(properties, controllerPath));
+        FeignBuilder feignBuilder = feignBuilder(properties);
+        return new ExternalServiceInvoker<T>(
+                feignBuilder.getFeignBuilder().target(clientType, buildTargetUrl(properties, controllerPath)),
+                feignBuilder.getHttpClient()
+        );
     }
 
-    protected final <T> T createFeignClient(Environment environment, Class<T> clientType) {
-        return createFeignClient(environment, null, clientType);
-    }
-
-    @Override
-    public void destroy() {
-        synchronized (closeableHttpClients) {
-            closeableHttpClients.forEach(closeableHttpClient -> {
-                LOG.info("Closing HTTP client connections for service: {}", getExternalServiceName());
-                try {
-                    closeableHttpClient.close();
-                } catch (IOException e) {
-                    LOG.error("Failed to close the HTTP client connection", e);
-                }
-            });
-        }
+    protected final <T> ExternalServiceInvoker<T> createServiceInvoker(Environment environment, Class<T> clientType) {
+        return createServiceInvoker(environment, null, clientType);
     }
 }
