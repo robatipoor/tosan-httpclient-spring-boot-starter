@@ -11,6 +11,7 @@ import com.tosan.client.http.starter.impl.feign.ExceptionExtractType;
 import com.tosan.client.http.starter.impl.feign.exception.TosanWebServiceRuntimeException;
 import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
 import feign.*;
+import io.micrometer.observation.ObservationRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.cloud.openfeign.support.SpringMvcContract;
@@ -31,8 +32,8 @@ import java.util.List;
 public class CustomServerFeignConfig extends AbstractFeignConfiguration {
     public static final String SERVICE_NAME = "custom-web-service2";
 
-    public CustomServerFeignConfig(JsonReplaceHelperDecider jsonReplaceHelperDecider) {
-        super(jsonReplaceHelperDecider);
+    public CustomServerFeignConfig(ObservationRegistry observationRegistry, JsonReplaceHelperDecider jsonReplaceHelperDecider) {
+        super(observationRegistry, jsonReplaceHelperDecider);
     }
 
     @Bean(SERVICE_NAME)

@@ -1,6 +1,7 @@
 package com.tosan.client.http.sample.client.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -15,7 +16,12 @@ import org.springframework.core.annotation.Order;
 public class AppConfig {
 
     @Bean
-    public ObjectMapper objectMapper(){
+    public ObjectMapper objectMapper() {
         return new ObjectMapper();
+    }
+
+    @Bean
+    public ObservationRegistry observationRegistry() {
+        return ObservationRegistry.create();
     }
 }

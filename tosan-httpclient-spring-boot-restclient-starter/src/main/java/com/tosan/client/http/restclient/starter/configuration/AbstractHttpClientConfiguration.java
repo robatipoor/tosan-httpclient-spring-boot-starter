@@ -35,11 +35,13 @@ import java.util.List;
 
 public abstract class AbstractHttpClientConfiguration implements DisposableBean {
 
-    private final List<CloseableHttpClient> closeableHttpClients = Collections.synchronizedList(new ArrayList<>());
     private static final Logger LOG = LoggerFactory.getLogger(AbstractHttpClientConfiguration.class);
+    private final ObservationRegistry observationRegistry;
+    private final List<CloseableHttpClient> closeableHttpClients = Collections.synchronizedList(new ArrayList<>());
     private final HttpLoggingInterceptorUtil httpLoggingInterceptorUtil;
 
-    protected AbstractHttpClientConfiguration(HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
+    protected AbstractHttpClientConfiguration(ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
+        this.observationRegistry = observationRegistry;
         this.httpLoggingInterceptorUtil = httpLoggingInterceptorUtil;
     }
 
@@ -63,10 +65,6 @@ public abstract class AbstractHttpClientConfiguration implements DisposableBean 
         }
     }
 
-    protected ObservationRegistry createObservationRegistry() {
-        return ObservationRegistry.create();
-    }
-
     protected DefaultClientRequestObservationConvention createObservationConvention() {
         return new TosanHttpClientObservationConvention().externalName(getExternalServiceName());
     }
@@ -78,7 +76,7 @@ public abstract class AbstractHttpClientConfiguration implements DisposableBean 
                 .requestInterceptors(interceptors ->
                         interceptors.addAll(createInterceptors(properties)))
                 .defaultStatusHandler(createResponseErrorHandler())
-                .observationRegistry(createObservationRegistry())
+                .observationRegistry(observationRegistry)
                 .observationConvention(createObservationConvention())
                 .build();
     }

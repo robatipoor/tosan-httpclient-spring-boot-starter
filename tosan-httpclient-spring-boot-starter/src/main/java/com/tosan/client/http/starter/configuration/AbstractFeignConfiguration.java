@@ -22,7 +22,6 @@ import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import feign.micrometer.MicrometerObservationCapability;
 import io.micrometer.observation.ObservationRegistry;
-import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
@@ -35,7 +34,6 @@ import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.cloud.openfeign.support.ResponseEntityDecoder;
 import org.springframework.cloud.openfeign.support.SpringMvcContract;
 import org.springframework.core.env.Environment;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -46,11 +44,13 @@ import static com.tosan.client.http.core.Constants.*;
 
 public abstract class AbstractFeignConfiguration implements DisposableBean {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(AbstractFeignConfiguration.class);
+    private final ObservationRegistry observationRegistry;
     private final List<CloseableHttpClient> closeableHttpClients = Collections.synchronizedList(new ArrayList<>());
     private final ObjectMapper defaultObjectMapper = createDefaultObjectMapper();
     private final JsonReplaceHelperDecider jsonReplaceHelperDecider;
 
-    protected AbstractFeignConfiguration(JsonReplaceHelperDecider jacksonReplaceHelper) {
+    protected AbstractFeignConfiguration(ObservationRegistry observationRegistry, JsonReplaceHelperDecider jacksonReplaceHelper) {
+        this.observationRegistry = observationRegistry;
         this.jsonReplaceHelperDecider = jacksonReplaceHelper;
     }
 
@@ -75,10 +75,6 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
 
     protected Logger.Level getLogLevel() {
         return Logger.Level.FULL;
-    }
-
-    protected ObservationRegistry createObservationRegistry() {
-        return ObservationRegistry.create();
     }
 
     protected CloseableHttpClient createFeignHttpClient(HttpClientProperties properties) {
@@ -157,7 +153,7 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
                 .retryer(createRetryer())
                 .logger(createLogger())
                 .logLevel(getLogLevel());
-        createCapabilities(createObservationRegistry()).forEach(feignBuilder::addCapability);
+        createCapabilities(observationRegistry).forEach(feignBuilder::addCapability);
         return feignBuilder;
     }
 
