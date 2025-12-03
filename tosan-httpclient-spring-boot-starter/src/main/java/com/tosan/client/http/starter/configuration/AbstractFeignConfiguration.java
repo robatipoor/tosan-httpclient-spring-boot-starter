@@ -135,7 +135,7 @@ public abstract class AbstractFeignConfiguration {
         return List.of(new MicrometerObservationCapability(observationRegistry, convention));
     }
 
-    private FeignBuilder feignBuilder(HttpClientProperties httpClientProperties) {
+    protected FeignBuilder createFeignBuilder(HttpClientProperties httpClientProperties) {
         CloseableHttpClient closeableHttpClient = createFeignHttpClient(httpClientProperties);
         ObjectMapper objectMapper = createObjectMapper();
         Feign.Builder feignBuilder = Feign.builder()
@@ -201,7 +201,7 @@ public abstract class AbstractFeignConfiguration {
     protected final <T> ExternalServiceInvoker<T> createServiceInvoker(Environment environment, String controllerPath, Class<T> clientType) {
         HttpClientProperties properties = loadHttpClientProperties(environment);
         validateProperties(properties);
-        FeignBuilder feignBuilder = feignBuilder(properties);
+        FeignBuilder feignBuilder = createFeignBuilder(properties);
         return new ExternalServiceInvoker<T>(
                 feignBuilder.getFeignBuilder().target(clientType, buildTargetUrl(properties, controllerPath)),
                 feignBuilder.getHttpClient()
