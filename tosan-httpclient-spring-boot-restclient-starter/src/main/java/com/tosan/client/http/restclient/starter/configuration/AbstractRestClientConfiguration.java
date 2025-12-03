@@ -3,6 +3,7 @@ package com.tosan.client.http.restclient.starter.configuration;
 import com.tosan.client.http.core.HttpClientProperties;
 import com.tosan.client.http.core.factory.ConfigurableApacheHttpClientFactory;
 import com.tosan.client.http.restclient.starter.exception.RestClientConfigurationException;
+import com.tosan.client.http.restclient.starter.impl.ClientService;
 import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
 import com.tosan.client.http.restclient.starter.impl.interceptor.HttpLoggingInterceptor;
 import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
@@ -10,13 +11,9 @@ import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
-import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.observation.DefaultClientRequestObservationConvention;
@@ -26,18 +23,14 @@ import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 
-public abstract class AbstractRestClientConfiguration implements DisposableBean {
+public abstract class AbstractRestClientConfiguration {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractRestClientConfiguration.class);
     private final ObservationRegistry observationRegistry;
-    private final List<CloseableHttpClient> closeableHttpClients = Collections.synchronizedList(new ArrayList<>());
     private final HttpLoggingInterceptorUtil httpLoggingInterceptorUtil;
 
     protected AbstractRestClientConfiguration(ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
@@ -69,16 +62,18 @@ public abstract class AbstractRestClientConfiguration implements DisposableBean 
         return new TosanHttpClientObservationConvention().externalName(getExternalServiceName());
     }
 
-    private RestClient createRestClient(HttpClientProperties properties) {
-        return RestClient.builder()
+    protected ClientService createClientService(HttpClientProperties properties) {
+        HttpComponentsClientHttpRequestFactory httpComponentsClientHttpRequestFactory = createRequestFactory(properties);
+        RestClient restClient = RestClient.builder()
                 .configureMessageConverters(this::configureMessageConverters)
-                .requestFactory(createRequestFactory(properties))
+                .requestFactory(httpComponentsClientHttpRequestFactory)
                 .requestInterceptors(interceptors ->
                         interceptors.addAll(createInterceptors(properties)))
                 .defaultStatusHandler(createResponseErrorHandler())
                 .observationRegistry(observationRegistry)
                 .observationConvention(createObservationConvention())
                 .build();
+        return new ClientService(restClient, httpComponentsClientHttpRequestFactory);
     }
 
     protected CloseableHttpClient createHttpClient(HttpClientProperties properties) {
@@ -90,9 +85,8 @@ public abstract class AbstractRestClientConfiguration implements DisposableBean 
         return factory.createBuilder().build();
     }
 
-    private ClientHttpRequestFactory createRequestFactory(HttpClientProperties properties) {
+    protected HttpComponentsClientHttpRequestFactory createRequestFactory(HttpClientProperties properties) {
         CloseableHttpClient closeableHttpClient = createHttpClient(properties);
-        closeableHttpClients.add(closeableHttpClient);
         return new HttpComponentsClientHttpRequestFactory(closeableHttpClient);
     }
 
@@ -125,21 +119,6 @@ public abstract class AbstractRestClientConfiguration implements DisposableBean 
     protected final ExternalServiceInvoker createServiceInvoker(Environment environment) {
         HttpClientProperties properties = loadHttpClientProperties(environment);
         validateProperties(properties);
-        RestClient restClient = createRestClient(properties);
-        return new ExternalServiceInvoker(restClient, properties);
-    }
-
-    @Override
-    public void destroy() {
-        synchronized (closeableHttpClients) {
-            closeableHttpClients.forEach(closeableHttpClient -> {
-                LOG.info("Closing HTTP client connections for service: {}", getExternalServiceName());
-                try {
-                    closeableHttpClient.close();
-                } catch (IOException e) {
-                    LOG.error("Failed to close the HTTP client connection", e);
-                }
-            });
-        }
+        return new ExternalServiceInvoker(createClientService(properties), properties);
     }
 }
