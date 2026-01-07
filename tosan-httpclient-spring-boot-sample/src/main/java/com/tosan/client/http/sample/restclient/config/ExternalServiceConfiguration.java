@@ -12,14 +12,13 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
@@ -83,15 +82,16 @@ public class ExternalServiceConfiguration extends AbstractHttpClientConfiguratio
         return super.httpMessageConverter(objectMapper);
     }
 
-    @Bean("external-restTemplateBuilder")
+    @Bean("external-restClient")
     @Override
-    public RestTemplateBuilder restTemplateBuilder(
+    public RestClient restClient(
             @Qualifier("external-httpMessageConverter") HttpMessageConverter<Object> httpMessageConverter,
             @Qualifier("external-clientHttpRequestFactory") ClientHttpRequestFactory clientHttpRequestFactory,
             @Qualifier("external-clientHttpRequestInterceptors") List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors,
-            @Qualifier("external-responseErrorHandler") ResponseErrorHandler responseErrorHandler) {
-        return super.restTemplateBuilder(httpMessageConverter, clientHttpRequestFactory, clientHttpRequestInterceptors,
-                responseErrorHandler);
+            @Qualifier("external-responseErrorHandler") ResponseErrorHandler responseErrorHandler,
+            @Qualifier("external-observationRegistry") ObservationRegistry observationRegistry) {
+        return super.restClient(httpMessageConverter, clientHttpRequestFactory, clientHttpRequestInterceptors,
+                responseErrorHandler, observationRegistry);
     }
 
     @Bean("external-httpLoggingRequestInterceptor")
@@ -114,19 +114,12 @@ public class ExternalServiceConfiguration extends AbstractHttpClientConfiguratio
         return new ExceptionHandler();
     }
 
-    @Bean("external-restTemplate")
-    @Override
-    public RestTemplate restTemplate(@Qualifier("external-restTemplateBuilder") RestTemplateBuilder builder,
-                                     @Qualifier("external-observationRegistry") ObservationRegistry observationRegistry) {
-        return super.restTemplate(builder, observationRegistry);
-    }
-
     @Bean("external-serviceInvoker")
     @Override
     public ExternalServiceInvoker serviceInvoker(
-            @Qualifier("external-restTemplate") RestTemplate restTemplate,
+            @Qualifier("external-restClient") RestClient restClient,
             @Qualifier("external-clientConfig") HttpClientProperties httpClientProperties) {
-        return super.serviceInvoker(restTemplate, httpClientProperties);
+        return super.serviceInvoker(restClient, httpClientProperties);
     }
 
     @Bean("external-observationRegistry")

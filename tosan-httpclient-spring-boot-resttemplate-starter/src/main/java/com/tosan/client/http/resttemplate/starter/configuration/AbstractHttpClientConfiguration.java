@@ -12,15 +12,15 @@ import com.tosan.client.http.resttemplate.starter.util.HttpLoggingInterceptorUti
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
@@ -67,7 +67,7 @@ public abstract class AbstractHttpClientConfiguration {
     }
 
     public HttpMessageConverter<Object> httpMessageConverter(ObjectMapper objectMapper) {
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper);
+        JacksonJsonHttpMessageConverter converter = new JacksonJsonHttpMessageConverter();
         converter.setSupportedMediaTypes(Collections.singletonList(MediaType.APPLICATION_JSON));
         return converter;
     }
@@ -96,26 +96,26 @@ public abstract class AbstractHttpClientConfiguration {
 
     public abstract ResponseErrorHandler responseErrorHandler();
 
-    public RestTemplateBuilder restTemplateBuilder(
+    public RestClient restClient(
             HttpMessageConverter<Object> httpMessageConverter,
             ClientHttpRequestFactory clientHttpRequestFactory,
             List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors,
-            ResponseErrorHandler responseErrorHandler) {
-        return new RestTemplateBuilder()
-                .messageConverters(httpMessageConverter)
-                .requestFactory(() -> clientHttpRequestFactory)
-                .additionalInterceptors(clientHttpRequestInterceptors)
-                .errorHandler(responseErrorHandler);
+            ResponseErrorHandler responseErrorHandler,
+            ObservationRegistry observationRegistry) {
+        return RestClient.builder().configureMessageConverters(converters -> {
+                    converters.addCustomConverter(httpMessageConverter);
+                })
+                .requestFactory(clientHttpRequestFactory)
+                .requestInterceptors(interceptors -> {
+                    interceptors.addAll(clientHttpRequestInterceptors);
+                })
+                .defaultStatusHandler(responseErrorHandler)
+                .observationRegistry(observationRegistry)
+                .observationConvention(new TosanHttpClientObservationConvention().externalName(getExternalServiceName()))
+                .build();
     }
 
-    public RestTemplate restTemplate(RestTemplateBuilder builder, ObservationRegistry observationRegistry) {
-        RestTemplate restTemplate = builder.build();
-        restTemplate.setObservationRegistry(observationRegistry);
-        restTemplate.setObservationConvention(new TosanHttpClientObservationConvention().externalName(getExternalServiceName()));
-        return restTemplate;
-    }
-
-    public ExternalServiceInvoker serviceInvoker(RestTemplate restTemplate, HttpClientProperties httpClientProperties) {
-        return new ExternalServiceInvoker(restTemplate, httpClientProperties);
+    public ExternalServiceInvoker serviceInvoker(RestClient restClient, HttpClientProperties httpClientProperties) {
+        return new ExternalServiceInvoker(restClient, httpClientProperties);
     }
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.util.RawValue;
 import com.tosan.tools.mask.starter.dto.JsonReplaceResultDto;
 import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
@@ -13,7 +14,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
@@ -25,7 +25,7 @@ import java.util.*;
  * @since 8/3/2022
  */
 public class HttpLoggingInterceptorUtil {
-    private static final ObjectMapper mapper = new Jackson2ObjectMapperBuilder().build();
+    private static final ObjectMapper mapper = new JsonMapper();
 
     static {
         mapper.enable(SerializationFeature.INDENT_OUTPUT)
@@ -96,7 +96,7 @@ public class HttpLoggingInterceptorUtil {
 
     private HttpHeaders getMaskedHeaders(HttpHeaders headers) {
         HttpHeaders securedHeaders = new HttpHeaders();
-        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+        for (Map.Entry<String, List<String>> entry : headers.headerSet()) {
             String headerName = entry.getKey();
             List<String> headerValues = entry.getValue();
             List<String> maskedHeaderValues = new ArrayList<>();

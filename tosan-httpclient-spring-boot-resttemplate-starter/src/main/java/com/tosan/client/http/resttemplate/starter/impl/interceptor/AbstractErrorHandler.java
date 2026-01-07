@@ -13,14 +13,6 @@ import java.net.URI;
  */
 public abstract class AbstractErrorHandler extends DefaultResponseErrorHandler {
 
-    public void handleError(ClientHttpResponse response) throws IOException {
-        try {
-            super.handleError(response);
-        } catch (Exception exception) {
-            mappingException(exception);
-        }
-    }
-
     public void handleError(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
         try {
             super.handleError(url, method, response);

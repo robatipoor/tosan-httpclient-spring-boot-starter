@@ -1,6 +1,7 @@
 package com.tosan.client.http.resttemplate.starter.impl;
 
 import com.tosan.client.http.core.HttpClientProperties;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -9,15 +10,15 @@ import org.springframework.web.client.RestTemplate;
  */
 public class ExternalServiceInvoker {
     private final String baseUrl;
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
-    public ExternalServiceInvoker(RestTemplate restTemplate, HttpClientProperties httpClientProperties) {
-        this.restTemplate = restTemplate;
+    public ExternalServiceInvoker(RestClient restClient, HttpClientProperties httpClientProperties) {
+        this.restClient = restClient;
         baseUrl = httpClientProperties.getBaseServiceUrl();
     }
 
-    public RestTemplate getRestTemplate() {
-        return restTemplate;
+    public RestClient getRestClient() {
+        return this.restClient;
     }
 
     public String generateUrl(String url) {

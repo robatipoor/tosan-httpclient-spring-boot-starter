@@ -35,7 +35,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.format.support.FormattingConversionService;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.converter.HttpMessageConverter;
 
 import java.util.List;
 
@@ -153,23 +152,14 @@ public class CustomServerFeignConfig extends AbstractFeignConfiguration {
 
     @Override
     @Bean("customServer-feignEncoder")
-    public Encoder feignEncoder(
-            @Qualifier("customServer-jacksonHttpMessageConverter") HttpMessageConverter<Object> httpMessageConverter) {
-        return super.feignEncoder(httpMessageConverter);
+    public Encoder feignEncoder(@Qualifier("customServer-objectMapper") ObjectMapper objectMapper) {
+        return super.feignEncoder(objectMapper);
     }
 
     @Override
     @Bean("customServer-feignDecoder")
-    public Decoder feignDecoder(
-            @Qualifier("customServer-jacksonHttpMessageConverter") HttpMessageConverter<Object> httpMessageConverter) {
-        return super.feignDecoder(httpMessageConverter);
-    }
-
-    @Override
-    @Bean("customServer-jacksonHttpMessageConverter")
-    public HttpMessageConverter<Object> httpMessageConverter(
-            @Qualifier("customServer-objectMapper") ObjectMapper objectMapper) {
-        return super.httpMessageConverter(objectMapper);
+    public Decoder feignDecoder(@Qualifier("customServer-objectMapper") ObjectMapper objectMapper) {
+        return super.feignDecoder(objectMapper);
     }
 
     @Override

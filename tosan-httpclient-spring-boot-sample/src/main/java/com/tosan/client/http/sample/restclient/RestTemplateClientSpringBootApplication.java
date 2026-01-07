@@ -51,22 +51,28 @@ public class RestTemplateClientSpringBootApplication implements CommandLineRunne
         ResponseEntity<GetInfoResponseDto> response;
         try {
             response = externalInvoker
-                    .getRestTemplate().postForEntity(externalInvoker.generateUrl("/info"),
-                            new HttpEntity<>(request, httpHeaders), GetInfoResponseDto.class);
+                    .getRestClient().post().uri(externalInvoker.generateUrl("/info"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request).retrieve().toEntity(GetInfoResponseDto.class);
             log.info("Response Info: {}", response);
-        }  catch (HttpClientRequestWrapperException e) {
+        } catch (HttpClientRequestWrapperException e) {
             log.error("HttpClientRequestWrapperException Info exception:", e);
         } catch (FeignClientRequestExecuteException e) {
             log.error("FeignClientRequestExecute Exception:", e);
         }
 
         try {
-            response = externalInvoker.getRestTemplate()
-                    .exchange(externalInvoker.generateUrl("/login"), HttpMethod.GET,
-                            new HttpEntity<>(null, httpHeaders), GetInfoResponseDto.class, Map.of());
+            response = externalInvoker.getRestClient().get()
+                    .uri(externalInvoker.generateUrl("/login"))
+                    .headers(headers -> {
+                        httpHeaders.forEach(headers::addAll
+                        );
+                    })
+                    .retrieve()
+                    .toEntity(GetInfoResponseDto.class);
 
             log.info("Response Info: {}", response);
-        }  catch (HttpClientRequestWrapperException e) {
+        } catch (HttpClientRequestWrapperException e) {
             log.error("HttpClientRequestWrapperException Info exception:", e);
         } catch (FeignClientRequestExecuteException e) {
             log.error("FeignClientRequestExecute Exception:", e);
@@ -74,8 +80,9 @@ public class RestTemplateClientSpringBootApplication implements CommandLineRunne
 
         request.setSsn(null);
         try {
-            response = externalInvoker.getRestTemplate().postForEntity(externalInvoker.generateUrl("/info"),
-                    new HttpEntity<>(request, httpHeaders), GetInfoResponseDto.class);
+            response = externalInvoker.getRestClient().post().uri(externalInvoker.generateUrl("/info")).body(request)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .retrieve().toEntity(GetInfoResponseDto.class);
             log.info("Response Info: {}", response);
         } catch (HttpClientRequestWrapperException e) {
             log.error("HttpClientRequestWrapperException Info exception:", e);
@@ -85,8 +92,9 @@ public class RestTemplateClientSpringBootApplication implements CommandLineRunne
 
         request.setSsn("");
         try {
-            response = externalInvoker.getRestTemplate().postForEntity(externalInvoker.generateUrl("/info"),
-                    new HttpEntity<>(request, httpHeaders), GetInfoResponseDto.class);
+            response = externalInvoker.getRestClient().post().uri(externalInvoker.generateUrl("/info")).body(request)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .retrieve().toEntity(GetInfoResponseDto.class);
             log.info("Response Info: {}", response);
         } catch (HttpClientRequestWrapperException e) {
             log.error("RestClient Info exception:", e);
@@ -96,8 +104,10 @@ public class RestTemplateClientSpringBootApplication implements CommandLineRunne
 
         request.setSsn("a1233");
         try {
-            response = externalInvoker.getRestTemplate().postForEntity(externalInvoker.generateUrl("/info"),
-                    new HttpEntity<>(request, httpHeaders), GetInfoResponseDto.class);
+            response = externalInvoker
+                    .getRestClient().post().uri(externalInvoker.generateUrl("/info")).body(request)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .retrieve().toEntity(GetInfoResponseDto.class);
             log.info("Response Info: {}", response);
         } catch (HttpClientRequestWrapperException e) {
             log.error("HttpClientRequestWrapperException Info exception:", e);

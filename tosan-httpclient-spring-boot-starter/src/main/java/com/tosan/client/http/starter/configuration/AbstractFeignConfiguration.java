@@ -22,6 +22,8 @@ import feign.codec.Decoder;
 import feign.codec.Encoder;
 import feign.form.spring.SpringFormEncoder;
 import feign.hc5.ApacheHttp5Client;
+import feign.jackson.JacksonDecoder;
+import feign.jackson.JacksonEncoder;
 import feign.micrometer.MicrometerObservationCapability;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.classic.HttpClient;
@@ -30,21 +32,15 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.ObjectFactory;
-import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
 import org.springframework.cloud.openfeign.AnnotatedParameterProcessor;
 import org.springframework.cloud.openfeign.FeignFormatterRegistrar;
 import org.springframework.cloud.openfeign.support.ResponseEntityDecoder;
-import org.springframework.cloud.openfeign.support.SpringDecoder;
-import org.springframework.cloud.openfeign.support.SpringEncoder;
 import org.springframework.cloud.openfeign.support.SpringMvcContract;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.format.support.FormattingConversionService;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -58,7 +54,6 @@ import static com.tosan.tools.mask.starter.configuration.MaskBeanConfiguration.S
  * @since 7/19/2022
  */
 public abstract class AbstractFeignConfiguration {
-    protected ObjectFactory<HttpMessageConverters> messageConverters;
 
     public abstract String getExternalServiceName();
 
@@ -159,21 +154,13 @@ public abstract class AbstractFeignConfiguration {
         return conversionService;
     }
 
-    public Encoder feignEncoder(HttpMessageConverter<Object> httpMessageConverter) {
-        return new SpringFormEncoder(new SpringEncoder(messageConverters));
+    public Encoder feignEncoder(ObjectMapper objectMapper) {
+        return new SpringFormEncoder(new JacksonEncoder(objectMapper));
     }
 
-    public Decoder feignDecoder(HttpMessageConverter<Object> httpMessageConverter) {
-        return new ResponseEntityDecoder(new SpringDecoder(messageConverters));
+    public Decoder feignDecoder(ObjectMapper objectMapper) {
+        return new ResponseEntityDecoder(new JacksonDecoder(objectMapper));
     }
-
-    public HttpMessageConverter<Object> httpMessageConverter(ObjectMapper objectMapper) {
-        MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter =
-                new MappingJackson2HttpMessageConverter(objectMapper);
-        messageConverters = () -> new HttpMessageConverters(mappingJackson2HttpMessageConverter);
-        return mappingJackson2HttpMessageConverter;
-    }
-
 
     public abstract CustomErrorDecoderConfig customErrorDecoderConfig(ObjectMapper objectMapper);
 
