@@ -1,9 +1,5 @@
 package com.tosan.client.http.resttemplate.starter.configuration;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.tosan.client.http.core.HttpClientProperties;
 import com.tosan.client.http.core.factory.ConfigurableApacheHttpClientFactory;
 import com.tosan.client.http.resttemplate.starter.impl.ExternalServiceInvoker;
