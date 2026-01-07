@@ -39,7 +39,7 @@
     <modules>
         <module>tosan-httpclient-spring-boot-core</module>
         <module>tosan-httpclient-spring-boot-starter</module>
-        <module>tosan-httpclient-spring-boot-resttemplate-starter</module>
+        <module>tosan-httpclient-spring-boot-restclient-starter</module>
         <module>tosan-httpclient-spring-boot-sample</module>
     </modules>
 

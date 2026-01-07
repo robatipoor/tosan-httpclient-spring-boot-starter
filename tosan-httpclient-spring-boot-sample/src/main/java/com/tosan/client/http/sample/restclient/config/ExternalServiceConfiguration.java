@@ -2,9 +2,9 @@ package com.tosan.client.http.sample.restclient.config;
 
 import com.tosan.client.http.core.HttpClientProperties;
 import com.tosan.client.http.core.factory.ConfigurableApacheHttpClientFactory;
-import com.tosan.client.http.resttemplate.starter.configuration.AbstractHttpClientConfiguration;
-import com.tosan.client.http.resttemplate.starter.impl.ExternalServiceInvoker;
-import com.tosan.client.http.resttemplate.starter.util.HttpLoggingInterceptorUtil;
+import com.tosan.client.http.restclient.starter.configuration.AbstractHttpClientConfiguration;
+import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
+import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
 import com.tosan.client.http.sample.restclient.exception.ExceptionHandler;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;

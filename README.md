@@ -12,7 +12,7 @@ The Tosan Http Client Spring Boot Starter maintains documentation, release notes
 To use these starters, it is enough to add the following dependencies to the project based on your needs so that
 the configuration are brought to the project, therefore you only need to add it as a maven dependency.
 The `tosan-httpclient-spring-boot-starter` brings the required configuration for produce sdk in http server and the
-`tosan-httpclient-spring-boot-resttemplate-starter` brings the required configuration for rest template client in every
+`tosan-httpclient-spring-boot-restclient-starter` brings the required configuration for rest client in every
 consumer of any rest web service.
 The usage of both are completely separate from each other.
 
@@ -27,7 +27,7 @@ The usage of both are completely separate from each other.
 ```
         <dependency>
             <groupId>com.tosan.client.http</groupId>
-            <artifactId>tosan-httpclient-spring-boot-resttemplate-starter</artifactId>
+            <artifactId>tosan-httpclient-spring-boot-restclient-starter</artifactId>
             <version>latest-version</version>
         </dependency>
 ```
@@ -206,7 +206,7 @@ returns `InternalServerErrorException` for other http status error code.
 The main benefit of this starter is to help you for consume any Rest web services.
 for this purpose, the actions mentioned in the following steps should be done.
 
-> 1. Create Configuration class that inherit [AbstractHttpClientConfiguration](./tosan-httpclient-spring-boot-resttemplate-starter/src/main/java/com/tosan/client/http/resttemplate/starter/configuration/AbstractHttpClientConfiguration.java) class and override all methods.\
+> 1. Create Configuration class that inherit [AbstractHttpClientConfiguration](./tosan-httpclient-spring-boot-restclient-starter/src/main/java/com/tosan/client/http/restclient/starter/configuration/AbstractHttpClientConfiguration.java) class and override all methods.\
      All methods of this configuration class must be annotated with @Bean(\"[yourWebServiceName]-methodName\") and all input arg of these methods must be annotated with @Qualifier(\"[yourDefineBeanName]\")\
      See [ExternalServiceConfiguration](./tosan-httpclient-spring-boot-sample/src/main/java/com/tosan/client/http/sample/restclient/config/ExternalServiceConfiguration.java)\
      The super method should be called in  all methods of this class except three abstract method([responseErrorHandler](#response_error_handler),getExternalServiceName,[clientConfig](#configuration)).

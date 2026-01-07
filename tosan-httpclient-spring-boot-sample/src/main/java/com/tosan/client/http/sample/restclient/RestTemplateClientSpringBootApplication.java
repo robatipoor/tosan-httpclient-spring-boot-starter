@@ -1,6 +1,6 @@
 package com.tosan.client.http.sample.restclient;
 
-import com.tosan.client.http.resttemplate.starter.impl.ExternalServiceInvoker;
+import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
 import com.tosan.client.http.sample.restclient.exception.HttpClientRequestWrapperException;
 import com.tosan.client.http.sample.server.api.config.feign.CustomServerFeignConfig;
 import com.tosan.client.http.sample.server.api.model.GetInfoRequestDto;
@@ -13,8 +13,6 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.http.*;
-
-import java.util.Map;
 
 /**
  * @author Ali Alimohammadi
