@@ -1,6 +1,5 @@
 package com.tosan.client.http.sample.restclient.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tosan.client.http.core.HttpClientProperties;
 import com.tosan.client.http.core.factory.ConfigurableApacheHttpClientFactory;
 import com.tosan.client.http.resttemplate.starter.configuration.AbstractHttpClientConfiguration;
@@ -32,12 +31,6 @@ public class ExternalServiceConfiguration extends AbstractHttpClientConfiguratio
     @Override
     public String getExternalServiceName() {
         return "custom-web-service";
-    }
-
-    @Bean("external-objectMapper")
-    @Override
-    public ObjectMapper objectMapper() {
-        return super.objectMapper();
     }
 
     @Bean("external-clientConfig")
@@ -77,9 +70,8 @@ public class ExternalServiceConfiguration extends AbstractHttpClientConfiguratio
 
     @Bean("external-httpMessageConverter")
     @Override
-    public HttpMessageConverter<Object> httpMessageConverter(
-            @Qualifier("external-objectMapper") ObjectMapper objectMapper) {
-        return super.httpMessageConverter(objectMapper);
+    public HttpMessageConverter<Object> httpMessageConverter() {
+        return super.httpMessageConverter();
     }
 
     @Bean("external-restClient")

@@ -6,8 +6,8 @@ import com.tosan.client.http.sample.server.api.config.feign.CustomServerFeignCon
 import com.tosan.client.http.sample.server.api.model.GetInfoRequestDto;
 import com.tosan.client.http.sample.server.api.model.GetInfoResponseDto;
 import com.tosan.client.http.starter.impl.feign.exception.FeignClientRequestExecuteException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -22,10 +22,10 @@ import java.util.Map;
  */
 @Slf4j
 @SpringBootApplication(scanBasePackages = {"com.tosan.client.http.sample.restclient"}, exclude = CustomServerFeignConfig.class)
+@RequiredArgsConstructor
 public class RestTemplateClientSpringBootApplication implements CommandLineRunner {
 
-    @Autowired
-    private ExternalServiceInvoker externalInvoker;
+    private final ExternalServiceInvoker externalInvoker;
 
     public static void main(String[] args) {
         new SpringApplicationBuilder(RestTemplateClientSpringBootApplication.class)

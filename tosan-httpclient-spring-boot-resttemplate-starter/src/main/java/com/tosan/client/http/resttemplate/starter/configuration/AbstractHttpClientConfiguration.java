@@ -12,7 +12,6 @@ import com.tosan.client.http.resttemplate.starter.util.HttpLoggingInterceptorUti
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -21,11 +20,9 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,15 +32,6 @@ import java.util.List;
 public abstract class AbstractHttpClientConfiguration {
 
     public abstract String getExternalServiceName();
-
-    public ObjectMapper objectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        return objectMapper;
-    }
 
     public abstract HttpClientProperties clientConfig();
 
@@ -66,10 +54,8 @@ public abstract class AbstractHttpClientConfiguration {
         return PoolingHttpClientConnectionManagerBuilder.create();
     }
 
-    public HttpMessageConverter<Object> httpMessageConverter(ObjectMapper objectMapper) {
-        JacksonJsonHttpMessageConverter converter = new JacksonJsonHttpMessageConverter();
-        converter.setSupportedMediaTypes(Collections.singletonList(MediaType.APPLICATION_JSON));
-        return converter;
+    public HttpMessageConverter<Object> httpMessageConverter() {
+        return new JacksonJsonHttpMessageConverter();
     }
 
     public ClientHttpRequestInterceptor httpLoggingRequestInterceptor(HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
