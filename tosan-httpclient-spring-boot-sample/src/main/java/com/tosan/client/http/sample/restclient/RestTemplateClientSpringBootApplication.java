@@ -36,10 +36,10 @@ public class RestTemplateClientSpringBootApplication implements CommandLineRunne
 
     /**
      * First works fine
-     * Second must throw InvalidParameterException
-     * Third must throw RequiredParameterException
-     * Forth must throw InternalServerError
-     * Fifth must throw Unknown exception
+     * Second must throw MissingRequestHeaderException
+     * Third must throw InvalidParameterException
+     * Forth must throw RequiredParameterException
+     * Fifth must throw NumberFormatException
      */
     @Override
     public void run(String... args) {
