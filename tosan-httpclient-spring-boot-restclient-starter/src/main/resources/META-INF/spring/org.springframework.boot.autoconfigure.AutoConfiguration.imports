@@ -1,1 +1,1 @@
-configuration.com.tosan.client.http.restclient.starter.ExternalHttpClientAutoConfiguration
+com.tosan.client.http.restclient.starter.configuration.ExternalHttpClientAutoConfiguration

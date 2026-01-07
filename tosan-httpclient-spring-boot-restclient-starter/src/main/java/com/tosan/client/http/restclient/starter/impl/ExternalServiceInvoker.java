@@ -2,7 +2,6 @@ package com.tosan.client.http.restclient.starter.impl;
 
 import com.tosan.client.http.core.HttpClientProperties;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 
 /**
  * @author Ali Alimohammadi

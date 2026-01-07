@@ -21,12 +21,12 @@ import org.springframework.http.*;
 @Slf4j
 @SpringBootApplication(scanBasePackages = {"com.tosan.client.http.sample.restclient"}, exclude = CustomServerFeignConfig.class)
 @RequiredArgsConstructor
-public class RestTemplateClientSpringBootApplication implements CommandLineRunner {
+public class RestClientSpringBootApplication implements CommandLineRunner {
 
     private final ExternalServiceInvoker externalInvoker;
 
     public static void main(String[] args) {
-        new SpringApplicationBuilder(RestTemplateClientSpringBootApplication.class)
+        new SpringApplicationBuilder(RestClientSpringBootApplication.class)
                 .web(WebApplicationType.NONE)
                 .build()
                 .run();
