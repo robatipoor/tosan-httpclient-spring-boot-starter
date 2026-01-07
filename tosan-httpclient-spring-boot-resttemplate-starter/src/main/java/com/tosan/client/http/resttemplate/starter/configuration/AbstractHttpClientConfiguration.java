@@ -76,6 +76,10 @@ public abstract class AbstractHttpClientConfiguration {
         return new HttpLoggingInterceptor(httpLoggingInterceptorUtil, getExternalServiceName());
     }
 
+    public ObservationRegistry observationRegistry() {
+        return ObservationRegistry.create();
+    }
+
     public List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors(
             HttpClientProperties httpClientProperties,
             ClientHttpRequestInterceptor httpLoggingRequestInterceptor) {

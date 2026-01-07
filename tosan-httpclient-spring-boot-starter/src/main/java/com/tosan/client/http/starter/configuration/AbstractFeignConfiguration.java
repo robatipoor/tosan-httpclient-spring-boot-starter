@@ -88,6 +88,10 @@ public abstract class AbstractFeignConfiguration {
         return new HttpFeignClientLogger(getExternalServiceName(), replaceHelperDecider);
     }
 
+    public ObservationRegistry observationRegistry() {
+        return ObservationRegistry.create();
+    }
+
     public ConfigurableApacheHttpClientFactory apacheHttpClientFactory(
             HttpClientBuilder builder,
             PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder,

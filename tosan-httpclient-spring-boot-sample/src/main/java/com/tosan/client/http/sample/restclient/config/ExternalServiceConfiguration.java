@@ -117,7 +117,7 @@ public class ExternalServiceConfiguration extends AbstractHttpClientConfiguratio
     @Bean("external-restTemplate")
     @Override
     public RestTemplate restTemplate(@Qualifier("external-restTemplateBuilder") RestTemplateBuilder builder,
-                                     ObservationRegistry observationRegistry) {
+                                     @Qualifier("external-observationRegistry") ObservationRegistry observationRegistry) {
         return super.restTemplate(builder, observationRegistry);
     }
 
@@ -127,5 +127,11 @@ public class ExternalServiceConfiguration extends AbstractHttpClientConfiguratio
             @Qualifier("external-restTemplate") RestTemplate restTemplate,
             @Qualifier("external-clientConfig") HttpClientProperties httpClientProperties) {
         return super.serviceInvoker(restTemplate, httpClientProperties);
+    }
+
+    @Bean("external-observationRegistry")
+    @Override
+    public ObservationRegistry observationRegistry() {
+        return super.observationRegistry();
     }
 }

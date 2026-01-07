@@ -174,7 +174,7 @@ public class CustomServerFeignConfig extends AbstractFeignConfiguration {
 
     @Override
     @Bean("customServer-feignErrorDecoderConfig")
-    public CustomErrorDecoderConfig     customErrorDecoderConfig(
+    public CustomErrorDecoderConfig customErrorDecoderConfig(
             @Qualifier("customServer-objectMapper") ObjectMapper objectMapper) {
         CustomErrorDecoderConfig customErrorDecoderConfig = new CustomErrorDecoderConfig();
         customErrorDecoderConfig.getScanPackageList().add("com.tosan.client.http.sample.server.api.exception");
@@ -213,6 +213,12 @@ public class CustomServerFeignConfig extends AbstractFeignConfiguration {
     }
 
     @Override
+    @Bean("customServer-observationRegistry")
+    public ObservationRegistry observationRegistry() {
+        return super.observationRegistry();
+    }
+
+    @Override
     @Bean("customServer-feignOption")
     public Request.Options options(
             @Qualifier("customServer-clientConfig") HttpClientProperties customServerClientConfig) {
@@ -221,7 +227,8 @@ public class CustomServerFeignConfig extends AbstractFeignConfiguration {
 
     @Override
     @Bean("customServer-feignCapabilities")
-    public List<Capability> feignCapabilities(ObservationRegistry observationRegistry) {
+    public List<Capability> feignCapabilities(
+            @Qualifier("customServer-observationRegistry") ObservationRegistry observationRegistry) {
         return super.feignCapabilities(observationRegistry);
     }
 
