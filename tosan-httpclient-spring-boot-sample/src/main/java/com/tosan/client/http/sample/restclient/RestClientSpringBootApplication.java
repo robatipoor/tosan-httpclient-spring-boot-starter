@@ -60,11 +60,11 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
         }
 
         try {
-            response = externalInvoker.getRestClient().get()
+            response = externalInvoker.getRestClient()
+                    .get()
                     .uri(externalInvoker.generateUrl("/login"))
                     .headers(headers -> {
-                        httpHeaders.forEach(headers::addAll
-                        );
+                        httpHeaders.forEach(headers::addAll);
                     })
                     .retrieve()
                     .toEntity(GetInfoResponseDto.class);

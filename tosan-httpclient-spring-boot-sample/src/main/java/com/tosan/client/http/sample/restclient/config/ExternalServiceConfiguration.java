@@ -1,25 +1,14 @@
 package com.tosan.client.http.sample.restclient.config;
 
-import com.tosan.client.http.core.HttpClientProperties;
-import com.tosan.client.http.core.factory.ConfigurableApacheHttpClientFactory;
 import com.tosan.client.http.restclient.starter.configuration.AbstractHttpClientConfiguration;
 import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
-import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
 import com.tosan.client.http.sample.restclient.exception.ExceptionHandler;
-import io.micrometer.observation.ObservationRegistry;
-import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.tosan.tools.mask.starter.replace.JacksonReplaceHelper;
+import com.tosan.tools.mask.starter.replace.RegexReplaceHelper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.core.env.Environment;
 import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestClient;
-
-import java.util.List;
 
 /**
  * @author Ali Alimohammadi
@@ -28,95 +17,40 @@ import java.util.List;
 @Configuration
 public class ExternalServiceConfiguration extends AbstractHttpClientConfiguration {
 
+    public static final String SERVICE_NAME = "custom-web-service";
+
+    private final JacksonReplaceHelper jacksonReplaceHelper;
+    private final RegexReplaceHelper regexReplaceHelper;
+
+    public ExternalServiceConfiguration(JacksonReplaceHelper jacksonReplaceHelper, RegexReplaceHelper regexReplaceHelper) {
+        this.jacksonReplaceHelper = jacksonReplaceHelper;
+        this.regexReplaceHelper = regexReplaceHelper;
+    }
+
+
     @Override
     public String getExternalServiceName() {
-        return "custom-web-service";
+        return SERVICE_NAME;
     }
 
-    @Bean("external-clientConfig")
-    @ConfigurationProperties(prefix = "custom-web-service.client")
+    @Bean(SERVICE_NAME)
     @Override
-    public HttpClientProperties clientConfig() {
-        return new HttpClientProperties();
+    public ExternalServiceInvoker serviceInvoker(Environment environment) {
+        return super.serviceInvoker(environment);
     }
 
-    @Bean("external-apacheHttpClientFactory")
-    @Override
-    public ConfigurableApacheHttpClientFactory apacheHttpClientFactory(
-            @Qualifier("external-apacheHttpClientBuilder") HttpClientBuilder builder,
-            @Qualifier("external-connectionManagerFactory") PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder,
-            @Qualifier("external-clientConfig") HttpClientProperties httpClientProperties) {
-        return super.apacheHttpClientFactory(builder, connectionManagerBuilder, httpClientProperties);
-    }
-
-    @Bean("external-clientHttpRequestFactory")
-    @Override
-    public ClientHttpRequestFactory clientHttpRequestFactory(
-            @Qualifier("external-apacheHttpClientFactory") ConfigurableApacheHttpClientFactory apacheHttpClientFactory) {
-        return super.clientHttpRequestFactory(apacheHttpClientFactory);
-    }
-
-    @Bean("external-apacheHttpClientBuilder")
-    @Override
-    public HttpClientBuilder apacheHttpClientBuilder() {
-        return super.apacheHttpClientBuilder();
-    }
-
-    @Bean("external-connectionManagerFactory")
-    @Override
-    public PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder() {
-        return super.connectionManagerBuilder();
-    }
-
-    @Bean("external-httpMessageConverter")
-    @Override
-    public HttpMessageConverter<Object> httpMessageConverter() {
-        return super.httpMessageConverter();
-    }
-
-    @Bean("external-restClient")
-    @Override
-    public RestClient restClient(
-            @Qualifier("external-httpMessageConverter") HttpMessageConverter<Object> httpMessageConverter,
-            @Qualifier("external-clientHttpRequestFactory") ClientHttpRequestFactory clientHttpRequestFactory,
-            @Qualifier("external-clientHttpRequestInterceptors") List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors,
-            @Qualifier("external-responseErrorHandler") ResponseErrorHandler responseErrorHandler,
-            @Qualifier("external-observationRegistry") ObservationRegistry observationRegistry) {
-        return super.restClient(httpMessageConverter, clientHttpRequestFactory, clientHttpRequestInterceptors,
-                responseErrorHandler, observationRegistry);
-    }
-
-    @Bean("external-httpLoggingRequestInterceptor")
-    @Override
-    public ClientHttpRequestInterceptor httpLoggingRequestInterceptor(HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
-        return super.httpLoggingRequestInterceptor(httpLoggingInterceptorUtil);
-    }
-
-    @Bean("external-clientHttpRequestInterceptors")
-    @Override
-    public List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors(
-            @Qualifier("external-clientConfig") HttpClientProperties httpClientProperties,
-            @Qualifier("external-httpLoggingRequestInterceptor") ClientHttpRequestInterceptor httpLoggingRequestInterceptor) {
-        return super.clientHttpRequestInterceptors(httpClientProperties, httpLoggingRequestInterceptor);
-    }
-
-    @Bean("external-responseErrorHandler")
     @Override
     public ResponseErrorHandler responseErrorHandler() {
         return new ExceptionHandler();
     }
 
-    @Bean("external-serviceInvoker")
     @Override
-    public ExternalServiceInvoker serviceInvoker(
-            @Qualifier("external-restClient") RestClient restClient,
-            @Qualifier("external-clientConfig") HttpClientProperties httpClientProperties) {
-        return super.serviceInvoker(restClient, httpClientProperties);
+    public JacksonReplaceHelper jacksonReplaceHelper() {
+        return this.jacksonReplaceHelper;
     }
 
-    @Bean("external-observationRegistry")
     @Override
-    public ObservationRegistry observationRegistry() {
-        return super.observationRegistry();
+    public RegexReplaceHelper regexReplaceHelper() {
+        return this.regexReplaceHelper;
     }
 }
