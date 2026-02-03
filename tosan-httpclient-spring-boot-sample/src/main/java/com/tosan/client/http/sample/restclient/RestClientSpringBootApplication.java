@@ -49,7 +49,7 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
         ResponseEntity<GetInfoResponseDto> response;
         try {
             response = externalInvoker
-                    .getRestClient().post().uri(externalInvoker.generateUrl("/info"))
+                    .getRestClient().post().uri(externalInvoker.generateUrl("/custom-server/info"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request).retrieve().toEntity(GetInfoResponseDto.class);
             log.info("Response Info: {}", response);
@@ -62,7 +62,7 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
         try {
             response = externalInvoker.getRestClient()
                     .get()
-                    .uri(externalInvoker.generateUrl("/login"))
+                    .uri(externalInvoker.generateUrl("/custom-server/login"))
                     .headers(headers -> {
                         httpHeaders.forEach(headers::addAll);
                     })
@@ -78,7 +78,7 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
 
         request.setSsn(null);
         try {
-            response = externalInvoker.getRestClient().post().uri(externalInvoker.generateUrl("/info")).body(request)
+            response = externalInvoker.getRestClient().post().uri(externalInvoker.generateUrl("/custom-server/info")).body(request)
                     .contentType(MediaType.APPLICATION_JSON)
                     .retrieve().toEntity(GetInfoResponseDto.class);
             log.info("Response Info: {}", response);
@@ -90,7 +90,7 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
 
         request.setSsn("");
         try {
-            response = externalInvoker.getRestClient().post().uri(externalInvoker.generateUrl("/info")).body(request)
+            response = externalInvoker.getRestClient().post().uri(externalInvoker.generateUrl("/custom-server/info")).body(request)
                     .contentType(MediaType.APPLICATION_JSON)
                     .retrieve().toEntity(GetInfoResponseDto.class);
             log.info("Response Info: {}", response);
@@ -103,7 +103,7 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
         request.setSsn("a1233");
         try {
             response = externalInvoker
-                    .getRestClient().post().uri(externalInvoker.generateUrl("/info")).body(request)
+                    .getRestClient().post().uri(externalInvoker.generateUrl("/custom-server/info")).body(request)
                     .contentType(MediaType.APPLICATION_JSON)
                     .retrieve().toEntity(GetInfoResponseDto.class);
             log.info("Response Info: {}", response);

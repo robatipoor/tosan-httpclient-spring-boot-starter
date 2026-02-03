@@ -16,7 +16,7 @@ import org.springframework.web.client.ResponseErrorHandler;
 @Configuration
 public class ExternalServiceConfiguration extends AbstractHttpClientConfiguration {
 
-    public static final String SERVICE_NAME = "custom-web-service";
+    public static final String SERVICE_NAME = "custom-web-service1";
 
     public ExternalServiceConfiguration(HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
         super(httpLoggingInterceptorUtil);

@@ -34,6 +34,7 @@ public class CustomErrorDecoder implements ErrorDecoder, InitializingBean {
 
     public CustomErrorDecoder(CustomErrorDecoderConfig customErrorDecoderConfig) {
         this.customErrorDecoderConfig = customErrorDecoderConfig;
+        this.objectMapper = customErrorDecoderConfig.getObjectMapper();
     }
 
     public ObjectMapper getObjectMapper() {

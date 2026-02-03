@@ -20,7 +20,16 @@ public class ExternalServiceInvoker {
         return this.restClient;
     }
 
-    public String generateUrl(String url) {
-        return baseUrl + url;
+    public String generateUrl(String path) {
+        if (path == null || path.isBlank()) {
+            return baseUrl;
+        }
+        if (baseUrl.endsWith("/") && path.startsWith("/")) {
+            return baseUrl + path.substring(1);
+        }
+        if (!baseUrl.endsWith("/") && !path.startsWith("/")) {
+            return baseUrl + "/" + path;
+        }
+        return baseUrl + path;
     }
 }
