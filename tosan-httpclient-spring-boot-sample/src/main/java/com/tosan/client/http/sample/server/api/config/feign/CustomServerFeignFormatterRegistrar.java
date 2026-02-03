@@ -8,7 +8,7 @@ import org.springframework.cloud.openfeign.FeignFormatterRegistrar;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.stereotype.Component;
 
-//@Component
+@Component
 public class CustomServerFeignFormatterRegistrar implements FeignFormatterRegistrar {
 
     private final ObjectMapper objectMapper;
