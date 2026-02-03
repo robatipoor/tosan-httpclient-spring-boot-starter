@@ -1,8 +1,10 @@
 package com.tosan.client.http.sample.server.api.config.feign;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tosan.client.http.sample.server.api.controller.CustomServerRestController;
 import com.tosan.client.http.sample.server.api.exception.CustomServerException;
+import com.tosan.client.http.sample.server.api.model.Context;
 import com.tosan.client.http.starter.configuration.AbstractFeignConfiguration;
 import com.tosan.client.http.starter.impl.feign.CustomErrorDecoderConfig;
 import com.tosan.client.http.starter.impl.feign.ExceptionExtractType;
@@ -11,9 +13,13 @@ import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
 import feign.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.cloud.openfeign.support.SpringMvcContract;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.format.support.FormattingConversionService;
+
+import java.util.List;
 
 /**
  * @author Ali Alimohammadi
@@ -48,5 +54,18 @@ public class CustomServerFeignConfig extends AbstractFeignConfiguration {
         customErrorDecoderConfig.setUncheckedExceptionClass(TosanWebServiceRuntimeException.class);
         customErrorDecoderConfig.setObjectMapper(objectMapper);
         return customErrorDecoderConfig;
+    }
+
+    @Override
+    protected Contract contract(ObjectMapper objectMapper) {
+        FormattingConversionService conversionService = new FormattingConversionService();
+        conversionService.addConverter(Context.class, String.class, source -> {
+            try {
+                return objectMapper.writeValueAsString(source);
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException(e);
+            }
+        });
+        return new SpringMvcContract(List.of(), conversionService);
     }
 }

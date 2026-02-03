@@ -118,7 +118,7 @@ public abstract class AbstractFeignConfiguration {
         return requestInterceptors;
     }
 
-    protected Contract contract() {
+    protected Contract contract(ObjectMapper objectMapper) {
         return new SpringMvcContract();
     }
 
@@ -181,7 +181,7 @@ public abstract class AbstractFeignConfiguration {
                 .encoder(encoder(objectMapper))
                 .decoder(decoder(objectMapper))
                 .errorDecoder(customErrorDecoder(customErrorDecoderConfig(objectMapper)))
-                .contract(contract())
+                .contract(contract(objectMapper))
                 .requestInterceptors(requestInterceptors(httpClientProperties, requestInterceptor()))
                 .retryer(retryer())
                 .logger(httpFeignClientLogger(jsonReplaceHelperDecider))

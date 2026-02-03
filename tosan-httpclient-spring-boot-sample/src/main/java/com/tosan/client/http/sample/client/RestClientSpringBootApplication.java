@@ -37,8 +37,8 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
 
     /**
      * First works fine
+     * Second works fine
      * Second must throw InvalidParameterException
-     * Third must throw InvalidParameterException
      * Forth must throw RequiredParameterException
      * Fifth must throw NumberFormatException
      */
@@ -48,20 +48,20 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
         GetInfoRequestDto request = new GetInfoRequestDto();
         request.setSsn("123456789");
         GetInfoResponseDto response;
-//        try {
-//            response = customServerClient.getInfo(request, httpHeaders);
-//            log.info("FeignClient Info: {}", response.toString());
-//        } catch (InvalidParameterException e) {
-//            log.error("FeignClient Info exception:{}", e.toString());
-//        } catch (UnknownException e) {
-//            log.error("FeignClient Unknown exception with status Code 4xx:{}", e.toString());
-//        } catch (RequiredParameterException e) {
-//            log.error("FeignClient RequiredParameterException:{}", e.toString());
-//        } catch (FeignClientRequestExecuteException e) {
-//            log.error("FeignClientRequestExecute Exception:", e);
-//        } catch (InternalServerException e) {
-//            log.error("InternalServerError Exception:", e);
-//        }
+        try {
+            response = customServerClient.getInfo(request, httpHeaders);
+            log.info("FeignClient Info: {}", response.toString());
+        } catch (InvalidParameterException e) {
+            log.error("FeignClient Info exception:{}", e.toString());
+        } catch (UnknownException e) {
+            log.error("FeignClient Unknown exception with status Code 4xx:{}", e.toString());
+        } catch (RequiredParameterException e) {
+            log.error("FeignClient RequiredParameterException:{}", e.toString());
+        } catch (FeignClientRequestExecuteException e) {
+            log.error("FeignClientRequestExecute Exception:", e);
+        } catch (InternalServerException e) {
+            log.error("InternalServerError Exception:", e);
+        }
 
         try {
             Context context = new Context();
@@ -78,52 +78,52 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
             log.error("InternalServerError Exception:", e);
         }
 
-//        request.setSsn(null);
-//        try {
-//            response = customServerClient.getInfo(request, httpHeaders);
-//            log.info("FeignClient Info: {}", response.toString());
-//        } catch (InvalidParameterException e) {
-//            log.error("FeignClient Info exception:{}", e.toString());
-//        } catch (UnknownException e) {
-//            log.error("FeignClient Unknown exception with status Code 4xx:{}", e.toString());
-//        } catch (RequiredParameterException e) {
-//            log.error("FeignClient RequiredParameterException:{}", e.toString());
-//        } catch (FeignClientRequestExecuteException e) {
-//            log.error("FeignClientRequestExecute Exception:", e);
-//        } catch (InternalServerException e) {
-//            log.error("InternalServerError Exception:", e);
-//        }
-//
-//        request.setSsn("");
-//        try {
-//            response = customServerClient.getInfo(request, httpHeaders);
-//            log.info("FeignClient Info: {}", response.toString());
-//        } catch (InvalidParameterException e) {
-//            log.error("FeignClient Info exception:{}", e.toString());
-//        } catch (UnknownException e) {
-//            log.error("FeignClient Unknown exception with status Code 4xx:{}", e.toString());
-//        } catch (FeignClientRequestExecuteException e) {
-//            log.error("FeignClientRequestExecute Exception:", e);
-//        } catch (RequiredParameterException e) {
-//            log.error("FeignClient RequiredParameterException:{}", e.toString());
-//        } catch (InternalServerException e) {
-//            log.error("InternalServerError Exception:", e);
-//        }
-//
-//        request.setSsn("a1233");
-//        try {
-//            response = customServerClient.getInfo(request, httpHeaders);
-//            log.info("FeignClient Info: {}", response.toString());
-//        } catch (InvalidParameterException e) {
-//            log.error("FeignClient Info exception:{}", e.toString());
-//        } catch (NumberFormatException e) {
-//            log.error("FeignClient NumberFormatException with status Code 5xx:{}", e.toString());
-//        } catch (RequiredParameterException e) {
-//            log.error("FeignClient RequiredParameterException:{}", e.toString());
-//        } catch (FeignClientRequestExecuteException e) {
-//            log.error("FeignClientRequestExecute Exception:", e);
-//        } catch (InternalServerException e) {
-//            log.error("InternalServerError Exception:{}", e.toString());
-//        }
+        request.setSsn(null);
+        try {
+            response = customServerClient.getInfo(request, httpHeaders);
+            log.info("FeignClient Info: {}", response.toString());
+        } catch (InvalidParameterException e) {
+            log.error("FeignClient Info exception:{}", e.toString());
+        } catch (UnknownException e) {
+            log.error("FeignClient Unknown exception with status Code 4xx:{}", e.toString());
+        } catch (RequiredParameterException e) {
+            log.error("FeignClient RequiredParameterException:{}", e.toString());
+        } catch (FeignClientRequestExecuteException e) {
+            log.error("FeignClientRequestExecute Exception:", e);
+        } catch (InternalServerException e) {
+            log.error("InternalServerError Exception:", e);
+        }
+
+        request.setSsn("");
+        try {
+            response = customServerClient.getInfo(request, httpHeaders);
+            log.info("FeignClient Info: {}", response.toString());
+        } catch (InvalidParameterException e) {
+            log.error("FeignClient Info exception:{}", e.toString());
+        } catch (UnknownException e) {
+            log.error("FeignClient Unknown exception with status Code 4xx:{}", e.toString());
+        } catch (FeignClientRequestExecuteException e) {
+            log.error("FeignClientRequestExecute Exception:", e);
+        } catch (RequiredParameterException e) {
+            log.error("FeignClient RequiredParameterException:{}", e.toString());
+        } catch (InternalServerException e) {
+            log.error("InternalServerError Exception:", e);
+        }
+
+        request.setSsn("a1233");
+        try {
+            response = customServerClient.getInfo(request, httpHeaders);
+            log.info("FeignClient Info: {}", response.toString());
+        } catch (InvalidParameterException e) {
+            log.error("FeignClient Info exception:{}", e.toString());
+        } catch (NumberFormatException e) {
+            log.error("FeignClient NumberFormatException with status Code 5xx:{}", e.toString());
+        } catch (RequiredParameterException e) {
+            log.error("FeignClient RequiredParameterException:{}", e.toString());
+        } catch (FeignClientRequestExecuteException e) {
+            log.error("FeignClientRequestExecute Exception:", e);
+        } catch (InternalServerException e) {
+            log.error("InternalServerError Exception:{}", e.toString());
+        }
     }
 }
