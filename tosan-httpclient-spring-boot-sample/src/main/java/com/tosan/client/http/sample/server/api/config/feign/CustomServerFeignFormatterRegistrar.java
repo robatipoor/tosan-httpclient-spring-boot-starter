@@ -13,7 +13,7 @@ public class CustomServerFeignFormatterRegistrar implements FeignFormatterRegist
 
     private final ObjectMapper objectMapper;
 
-    public CustomServerFeignFormatterRegistrar(@Qualifier("customServer-objectMapper") ObjectMapper objectMapper) {
+    public CustomServerFeignFormatterRegistrar(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
