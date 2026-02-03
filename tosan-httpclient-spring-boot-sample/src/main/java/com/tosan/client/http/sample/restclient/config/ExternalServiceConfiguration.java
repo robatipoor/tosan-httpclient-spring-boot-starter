@@ -2,9 +2,8 @@ package com.tosan.client.http.sample.restclient.config;
 
 import com.tosan.client.http.restclient.starter.configuration.AbstractHttpClientConfiguration;
 import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
+import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
 import com.tosan.client.http.sample.restclient.exception.ExceptionHandler;
-import com.tosan.tools.mask.starter.replace.JacksonReplaceHelper;
-import com.tosan.tools.mask.starter.replace.RegexReplaceHelper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -19,17 +18,12 @@ public class ExternalServiceConfiguration extends AbstractHttpClientConfiguratio
 
     public static final String SERVICE_NAME = "custom-web-service";
 
-    private final JacksonReplaceHelper jacksonReplaceHelper;
-    private final RegexReplaceHelper regexReplaceHelper;
-
-    public ExternalServiceConfiguration(JacksonReplaceHelper jacksonReplaceHelper, RegexReplaceHelper regexReplaceHelper) {
-        this.jacksonReplaceHelper = jacksonReplaceHelper;
-        this.regexReplaceHelper = regexReplaceHelper;
+    public ExternalServiceConfiguration(HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
+        super(httpLoggingInterceptorUtil);
     }
 
-
     @Override
-    public String getExternalServiceName() {
+    protected String getExternalServiceName() {
         return SERVICE_NAME;
     }
 
@@ -40,17 +34,7 @@ public class ExternalServiceConfiguration extends AbstractHttpClientConfiguratio
     }
 
     @Override
-    public ResponseErrorHandler responseErrorHandler() {
+    protected ResponseErrorHandler responseErrorHandler() {
         return new ExceptionHandler();
-    }
-
-    @Override
-    public JacksonReplaceHelper jacksonReplaceHelper() {
-        return this.jacksonReplaceHelper;
-    }
-
-    @Override
-    public RegexReplaceHelper regexReplaceHelper() {
-        return this.regexReplaceHelper;
     }
 }

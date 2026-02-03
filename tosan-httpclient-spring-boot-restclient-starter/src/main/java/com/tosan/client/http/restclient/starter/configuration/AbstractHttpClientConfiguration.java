@@ -1,19 +1,10 @@
 package com.tosan.client.http.restclient.starter.configuration;
 
-import com.tosan.client.http.core.Constants;
 import com.tosan.client.http.core.HttpClientProperties;
 import com.tosan.client.http.core.factory.ConfigurableApacheHttpClientFactory;
 import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
 import com.tosan.client.http.restclient.starter.impl.interceptor.HttpLoggingInterceptor;
 import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
-import com.tosan.tools.mask.starter.business.ComparisonTypeFactory;
-import com.tosan.tools.mask.starter.business.ValueMaskFactory;
-import com.tosan.tools.mask.starter.config.SecureParameter;
-import com.tosan.tools.mask.starter.config.SecureParametersConfig;
-import com.tosan.tools.mask.starter.configuration.MaskBeanConfiguration;
-import com.tosan.tools.mask.starter.replace.JacksonReplaceHelper;
-import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
-import com.tosan.tools.mask.starter.replace.RegexReplaceHelper;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
@@ -31,7 +22,6 @@ import org.springframework.web.client.RestClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -40,9 +30,17 @@ import java.util.List;
  */
 public abstract class AbstractHttpClientConfiguration {
 
-    public abstract String getExternalServiceName();
+    private final HttpLoggingInterceptorUtil httpLoggingInterceptorUtil;
 
-    public RestClient restClient(HttpClientProperties httpClientProperties) {
+    protected AbstractHttpClientConfiguration(HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
+        this.httpLoggingInterceptorUtil = httpLoggingInterceptorUtil;
+    }
+
+    protected abstract String getExternalServiceName();
+
+    protected abstract ResponseErrorHandler responseErrorHandler();
+
+    protected RestClient restClient(HttpClientProperties httpClientProperties) {
         return this.restClient(
                 httpMessageConverter(),
                 clientHttpRequestFactory(
@@ -52,70 +50,40 @@ public abstract class AbstractHttpClientConfiguration {
                                 httpClientProperties
                         )
                 ),
-                clientHttpRequestInterceptors(httpClientProperties, httpLoggingRequestInterceptor(
-                        httpLoggingInterceptorUtil(replaceHelperDecider(
-                                jacksonReplaceHelper(),
-                                regexReplaceHelper(),
-                                secureParametersConfig()
-                        )))),
+                clientHttpRequestInterceptors(httpClientProperties,
+                        new HttpLoggingInterceptor(this.httpLoggingInterceptorUtil, getExternalServiceName())),
                 responseErrorHandler(), observationRegistry()
         );
     }
 
-    public abstract JacksonReplaceHelper jacksonReplaceHelper() ;
-
-    public abstract RegexReplaceHelper regexReplaceHelper() ;
-
-    public JsonReplaceHelperDecider replaceHelperDecider(
-            JacksonReplaceHelper jacksonReplaceHelper, RegexReplaceHelper regexReplaceHelper,
-            SecureParametersConfig secureParametersConfig) {
-
-        return new JsonReplaceHelperDecider(jacksonReplaceHelper, regexReplaceHelper, secureParametersConfig);
-    }
-
-    public SecureParametersConfig secureParametersConfig() {
-        HashSet<SecureParameter> securedParameters = new HashSet<>(MaskBeanConfiguration.SECURED_PARAMETERS);
-        securedParameters.add(Constants.AUTHORIZATION_SECURE_PARAM);
-        securedParameters.add(Constants.PROXY_AUTHORIZATION_SECURE_PARAM);
-        return new SecureParametersConfig(securedParameters);
-    }
-
-    public HttpLoggingInterceptorUtil httpLoggingInterceptorUtil(JsonReplaceHelperDecider replaceHelperDecider) {
-        return new HttpLoggingInterceptorUtil(replaceHelperDecider);
-    }
-
-    public ConfigurableApacheHttpClientFactory apacheHttpClientFactory(
+    protected ConfigurableApacheHttpClientFactory apacheHttpClientFactory(
             HttpClientBuilder builder,
             PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder,
             HttpClientProperties httpClientProperties) {
         return new ConfigurableApacheHttpClientFactory(builder, connectionManagerBuilder, httpClientProperties);
     }
 
-    public ClientHttpRequestFactory clientHttpRequestFactory(ConfigurableApacheHttpClientFactory apacheHttpClientFactory) {
+    protected ClientHttpRequestFactory clientHttpRequestFactory(ConfigurableApacheHttpClientFactory apacheHttpClientFactory) {
         return new HttpComponentsClientHttpRequestFactory(apacheHttpClientFactory.createBuilder().build());
     }
 
-    public HttpClientBuilder apacheHttpClientBuilder() {
+    protected HttpClientBuilder apacheHttpClientBuilder() {
         return HttpClientBuilder.create();
     }
 
-    public PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder() {
+    protected PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder() {
         return PoolingHttpClientConnectionManagerBuilder.create();
     }
 
-    public HttpMessageConverter<Object> httpMessageConverter() {
+    protected HttpMessageConverter<?> httpMessageConverter() {
         return new JacksonJsonHttpMessageConverter();
     }
 
-    public ClientHttpRequestInterceptor httpLoggingRequestInterceptor(HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
-        return new HttpLoggingInterceptor(httpLoggingInterceptorUtil, getExternalServiceName());
-    }
-
-    public ObservationRegistry observationRegistry() {
+    protected ObservationRegistry observationRegistry() {
         return ObservationRegistry.create();
     }
 
-    public List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors(
+    protected List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors(
             HttpClientProperties httpClientProperties,
             ClientHttpRequestInterceptor httpLoggingRequestInterceptor) {
         List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors = new ArrayList<>();
@@ -129,10 +97,8 @@ public abstract class AbstractHttpClientConfiguration {
         return clientHttpRequestInterceptors;
     }
 
-    public abstract ResponseErrorHandler responseErrorHandler();
-
-    public RestClient restClient(
-            HttpMessageConverter<Object> httpMessageConverter,
+    protected RestClient restClient(
+            HttpMessageConverter<?> httpMessageConverter,
             ClientHttpRequestFactory clientHttpRequestFactory,
             List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors,
             ResponseErrorHandler responseErrorHandler,
@@ -150,14 +116,15 @@ public abstract class AbstractHttpClientConfiguration {
                 .build();
     }
 
-    public ExternalServiceInvoker serviceInvoker(Environment environment) {
+    protected ExternalServiceInvoker serviceInvoker(Environment environment) {
         HttpClientProperties httpClientProperties = this.httpClientProperties(environment);
         return new ExternalServiceInvoker(this.restClient(httpClientProperties), httpClientProperties);
     }
 
-    public HttpClientProperties httpClientProperties(Environment environment) {
+    protected HttpClientProperties httpClientProperties(Environment environment) {
         HttpClientProperties props = new HttpClientProperties();
         Binder binder = Binder.get(environment);
+        // TODO Perhaps we should consider changing the postfix
         binder.bind(getExternalServiceName() + ".client", Bindable.ofInstance(props));
         return props;
     }
