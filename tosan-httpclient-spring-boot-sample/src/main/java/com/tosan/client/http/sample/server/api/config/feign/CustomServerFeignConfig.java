@@ -35,18 +35,18 @@ public class CustomServerFeignConfig extends AbstractFeignConfiguration {
         super(jsonReplaceHelperDecider);
     }
 
+    @Bean(SERVICE_NAME)
+    public CustomServerRestController feignClientBean(Environment environment) {
+        return createFeignClient(environment, CustomServerRestController.PATH, CustomServerRestController.class);
+    }
+
     @Override
     public String getExternalServiceName() {
         return SERVICE_NAME;
     }
 
-    @Bean(SERVICE_NAME)
-    public CustomServerRestController customServerRestControllerBean(Environment environment) {
-        return getFeignController(environment, CustomServerRestController.PATH, CustomServerRestController.class);
-    }
-
     @Override
-    public CustomErrorDecoderConfig customErrorDecoderConfig(ObjectMapper objectMapper) {
+    public CustomErrorDecoderConfig createCustomErrorDecoderConfig(ObjectMapper objectMapper) {
         CustomErrorDecoderConfig customErrorDecoderConfig = new CustomErrorDecoderConfig();
         customErrorDecoderConfig.getScanPackageList().add("com.tosan.client.http.sample.server.api.exception");
         customErrorDecoderConfig.setExceptionExtractType(ExceptionExtractType.EXCEPTION_IDENTIFIER_FIELDS);
@@ -57,7 +57,7 @@ public class CustomServerFeignConfig extends AbstractFeignConfiguration {
     }
 
     @Override
-    protected Contract contract(ObjectMapper objectMapper) {
+    protected Contract createContract(ObjectMapper objectMapper) {
         FormattingConversionService conversionService = new FormattingConversionService();
         conversionService.addConverter(Context.class, String.class, source -> {
             try {

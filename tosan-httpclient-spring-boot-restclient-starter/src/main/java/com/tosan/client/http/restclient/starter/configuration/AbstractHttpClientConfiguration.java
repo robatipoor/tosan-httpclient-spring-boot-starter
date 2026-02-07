@@ -6,6 +6,7 @@ import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
 import com.tosan.client.http.restclient.starter.impl.interceptor.HttpLoggingInterceptor;
 import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.springframework.boot.context.properties.bind.Bindable;
@@ -15,7 +16,7 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
-import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -38,94 +39,79 @@ public abstract class AbstractHttpClientConfiguration {
 
     protected abstract String getExternalServiceName();
 
-    protected abstract ResponseErrorHandler responseErrorHandler();
+    protected abstract ResponseErrorHandler createResponseErrorHandler();
 
-    protected RestClient restClient(HttpClientProperties httpClientProperties) {
-        return this.restClient(
-                httpMessageConverter(),
-                clientHttpRequestFactory(
-                        apacheHttpClientFactory(
-                                apacheHttpClientBuilder(),
-                                connectionManagerBuilder(),
-                                httpClientProperties
-                        )
-                ),
-                clientHttpRequestInterceptors(httpClientProperties,
-                        new HttpLoggingInterceptor(this.httpLoggingInterceptorUtil, getExternalServiceName())),
-                responseErrorHandler(), observationRegistry()
-        );
+    protected HttpClientProperties loadHttpClientProperties(Environment environment) {
+        HttpClientProperties properties = new HttpClientProperties();
+        Binder binder = Binder.get(environment);
+        String propertyPrefix = getExternalServiceName() + ".client";
+        binder.bind(propertyPrefix, Bindable.ofInstance(properties));
+        return properties;
     }
 
-    protected ConfigurableApacheHttpClientFactory apacheHttpClientFactory(
-            HttpClientBuilder builder,
-            PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder,
-            HttpClientProperties httpClientProperties) {
-        return new ConfigurableApacheHttpClientFactory(builder, connectionManagerBuilder, httpClientProperties);
-    }
-
-    protected ClientHttpRequestFactory clientHttpRequestFactory(ConfigurableApacheHttpClientFactory apacheHttpClientFactory) {
-        return new HttpComponentsClientHttpRequestFactory(apacheHttpClientFactory.createBuilder().build());
-    }
-
-    protected HttpClientBuilder apacheHttpClientBuilder() {
-        return HttpClientBuilder.create();
-    }
-
-    protected PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder() {
-        return PoolingHttpClientConnectionManagerBuilder.create();
-    }
-
-    protected HttpMessageConverter<?> httpMessageConverter() {
-        return new JacksonJsonHttpMessageConverter();
-    }
-
-    protected ObservationRegistry observationRegistry() {
+    protected ObservationRegistry createObservationRegistry() {
         return ObservationRegistry.create();
     }
 
-    protected List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors(
-            HttpClientProperties httpClientProperties,
-            ClientHttpRequestInterceptor httpLoggingRequestInterceptor) {
-        List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors = new ArrayList<>();
-        clientHttpRequestInterceptors.add(httpLoggingRequestInterceptor);
-        HttpClientProperties.AuthorizationConfiguration authorizationConfiguration =
-                httpClientProperties.getAuthorization();
-        if (httpClientProperties.getAuthorization().isEnable()) {
-            clientHttpRequestInterceptors.add(new BasicAuthenticationInterceptor(authorizationConfiguration.getUsername(),
-                    authorizationConfiguration.getPassword(), StandardCharsets.UTF_8));
-        }
-        return clientHttpRequestInterceptors;
+    protected TosanHttpClientObservationConvention createObservationConvention() {
+        return new TosanHttpClientObservationConvention().externalName(getExternalServiceName());
     }
 
-    protected RestClient restClient(
-            HttpMessageConverter<?> httpMessageConverter,
-            ClientHttpRequestFactory clientHttpRequestFactory,
-            List<ClientHttpRequestInterceptor> clientHttpRequestInterceptors,
-            ResponseErrorHandler responseErrorHandler,
-            ObservationRegistry observationRegistry) {
-        return RestClient.builder().configureMessageConverters(converters -> {
-                    converters.addCustomConverter(httpMessageConverter);
-                })
-                .requestFactory(clientHttpRequestFactory)
-                .requestInterceptors(interceptors -> {
-                    interceptors.addAll(clientHttpRequestInterceptors);
-                })
-                .defaultStatusHandler(responseErrorHandler)
-                .observationRegistry(observationRegistry)
-                .observationConvention(new TosanHttpClientObservationConvention().externalName(getExternalServiceName()))
+    protected RestClient createRestClient(HttpClientProperties properties) {
+        return RestClient.builder()
+                .configureMessageConverters(this::configureMessageConverters)
+                .requestFactory(createRequestFactory(properties))
+                .requestInterceptors(interceptors ->
+                        interceptors.addAll(createInterceptors(properties)))
+                .defaultStatusHandler(createResponseErrorHandler())
+                .observationRegistry(createObservationRegistry())
+                .observationConvention(createObservationConvention())
                 .build();
     }
 
-    protected ExternalServiceInvoker serviceInvoker(Environment environment) {
-        HttpClientProperties httpClientProperties = this.httpClientProperties(environment);
-        return new ExternalServiceInvoker(this.restClient(httpClientProperties), httpClientProperties);
+    protected CloseableHttpClient createHttpClient(HttpClientProperties properties) {
+        HttpClientBuilder builder = HttpClientBuilder.create();
+        PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder =
+                PoolingHttpClientConnectionManagerBuilder.create();
+        ConfigurableApacheHttpClientFactory factory = new ConfigurableApacheHttpClientFactory(
+                builder, connectionManagerBuilder, properties);
+        return factory.createBuilder().build();
     }
 
-    protected HttpClientProperties httpClientProperties(Environment environment) {
-        HttpClientProperties props = new HttpClientProperties();
-        Binder binder = Binder.get(environment);
-        // TODO Perhaps we should consider changing the postfix
-        binder.bind(getExternalServiceName() + ".client", Bindable.ofInstance(props));
-        return props;
+    protected ClientHttpRequestFactory createRequestFactory(HttpClientProperties properties) {
+        CloseableHttpClient httpClient = createHttpClient(properties);
+        return new HttpComponentsClientHttpRequestFactory(httpClient);
+    }
+
+    protected List<ClientHttpRequestInterceptor> createInterceptors(HttpClientProperties properties) {
+        List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
+        interceptors.add(createLoggingInterceptor());
+        if (properties.getAuthorization().isEnable()) {
+            interceptors.add(createBasicAuthInterceptor(properties));
+        }
+        return interceptors;
+    }
+
+    protected void configureMessageConverters(HttpMessageConverters.ClientBuilder converters) {
+        converters.addCustomConverter(new JacksonJsonHttpMessageConverter());
+    }
+
+    protected final ClientHttpRequestInterceptor createLoggingInterceptor() {
+        return new HttpLoggingInterceptor(httpLoggingInterceptorUtil, getExternalServiceName());
+    }
+
+    protected final ClientHttpRequestInterceptor createBasicAuthInterceptor(HttpClientProperties properties) {
+        HttpClientProperties.AuthorizationConfiguration authConfig = properties.getAuthorization();
+        return new BasicAuthenticationInterceptor(
+                authConfig.getUsername(),
+                authConfig.getPassword(),
+                StandardCharsets.UTF_8
+        );
+    }
+
+    protected final ExternalServiceInvoker createServiceInvoker(Environment environment) {
+        HttpClientProperties properties = loadHttpClientProperties(environment);
+        RestClient restClient = createRestClient(properties);
+        return new ExternalServiceInvoker(restClient, properties);
     }
 }

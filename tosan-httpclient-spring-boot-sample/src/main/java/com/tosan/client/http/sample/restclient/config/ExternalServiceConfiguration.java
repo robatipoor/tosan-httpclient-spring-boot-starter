@@ -22,19 +22,18 @@ public class ExternalServiceConfiguration extends AbstractHttpClientConfiguratio
         super(httpLoggingInterceptorUtil);
     }
 
+    @Bean(SERVICE_NAME)
+    public ExternalServiceInvoker serviceInvokerBean(Environment environment) {
+        return super.createServiceInvoker(environment);
+    }
+
     @Override
     protected String getExternalServiceName() {
         return SERVICE_NAME;
     }
 
-    @Bean(SERVICE_NAME)
     @Override
-    public ExternalServiceInvoker serviceInvoker(Environment environment) {
-        return super.serviceInvoker(environment);
-    }
-
-    @Override
-    protected ResponseErrorHandler responseErrorHandler() {
+    protected ResponseErrorHandler createResponseErrorHandler() {
         return new ExceptionHandler();
     }
 }
