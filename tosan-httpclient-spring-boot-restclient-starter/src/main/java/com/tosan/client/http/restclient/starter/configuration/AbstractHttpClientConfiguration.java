@@ -2,6 +2,7 @@ package com.tosan.client.http.restclient.starter.configuration;
 
 import com.tosan.client.http.core.HttpClientProperties;
 import com.tosan.client.http.core.factory.ConfigurableApacheHttpClientFactory;
+import com.tosan.client.http.restclient.starter.exception.RestClientConfigurationException;
 import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
 import com.tosan.client.http.restclient.starter.impl.interceptor.HttpLoggingInterceptor;
 import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
@@ -9,6 +10,9 @@ import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
@@ -21,16 +25,17 @@ import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-/**
- * @author Ali Alimohammadi
- * @since 8/3/2022
- */
-public abstract class AbstractHttpClientConfiguration {
 
+public abstract class AbstractHttpClientConfiguration implements DisposableBean {
+
+    private final List<CloseableHttpClient> closeableHttpClients = Collections.synchronizedList(new ArrayList<>());
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractHttpClientConfiguration.class);
     private final HttpLoggingInterceptorUtil httpLoggingInterceptorUtil;
 
     protected AbstractHttpClientConfiguration(HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
@@ -47,6 +52,14 @@ public abstract class AbstractHttpClientConfiguration {
         String propertyPrefix = getExternalServiceName() + ".client";
         binder.bind(propertyPrefix, Bindable.ofInstance(properties));
         return properties;
+    }
+
+    protected void validateProperties(HttpClientProperties properties) {
+        if (properties.getBaseServiceUrl() == null) {
+            throw new RestClientConfigurationException(
+                    "Base service URL for rest client cannot be null for service: " + getExternalServiceName()
+            );
+        }
     }
 
     protected ObservationRegistry createObservationRegistry() {
@@ -79,14 +92,15 @@ public abstract class AbstractHttpClientConfiguration {
     }
 
     protected ClientHttpRequestFactory createRequestFactory(HttpClientProperties properties) {
-        CloseableHttpClient httpClient = createHttpClient(properties);
-        return new HttpComponentsClientHttpRequestFactory(httpClient);
+        CloseableHttpClient closeableHttpClient = createHttpClient(properties);
+        closeableHttpClients.add(closeableHttpClient);
+        return new HttpComponentsClientHttpRequestFactory(closeableHttpClient);
     }
 
     protected List<ClientHttpRequestInterceptor> createInterceptors(HttpClientProperties properties) {
         List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
         interceptors.add(createLoggingInterceptor());
-        if (properties.getAuthorization().isEnable()) {
+        if (properties.getAuthorization() != null && properties.getAuthorization().isEnable()) {
             interceptors.add(createBasicAuthInterceptor(properties));
         }
         return interceptors;
@@ -96,11 +110,11 @@ public abstract class AbstractHttpClientConfiguration {
         converters.addCustomConverter(new JacksonJsonHttpMessageConverter());
     }
 
-    protected final ClientHttpRequestInterceptor createLoggingInterceptor() {
+    private ClientHttpRequestInterceptor createLoggingInterceptor() {
         return new HttpLoggingInterceptor(httpLoggingInterceptorUtil, getExternalServiceName());
     }
 
-    protected final ClientHttpRequestInterceptor createBasicAuthInterceptor(HttpClientProperties properties) {
+    private ClientHttpRequestInterceptor createBasicAuthInterceptor(HttpClientProperties properties) {
         HttpClientProperties.AuthorizationConfiguration authConfig = properties.getAuthorization();
         return new BasicAuthenticationInterceptor(
                 authConfig.getUsername(),
@@ -111,7 +125,22 @@ public abstract class AbstractHttpClientConfiguration {
 
     protected final ExternalServiceInvoker createServiceInvoker(Environment environment) {
         HttpClientProperties properties = loadHttpClientProperties(environment);
+        validateProperties(properties);
         RestClient restClient = createRestClient(properties);
         return new ExternalServiceInvoker(restClient, properties);
+    }
+
+    @Override
+    public void destroy() {
+        synchronized (closeableHttpClients) {
+            closeableHttpClients.forEach(closeableHttpClient -> {
+                LOG.info("Closing HTTP client connections for service: {}", getExternalServiceName());
+                try {
+                    closeableHttpClient.close();
+                } catch (IOException e) {
+                    LOG.error("Closing HTTP client connection failed ", e);
+                }
+            });
+        }
     }
 }

@@ -30,7 +30,7 @@ public class HttpLoggingInterceptorUtil {
     static {
         mapper.enable(SerializationFeature.INDENT_OUTPUT)
                 .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 

@@ -27,25 +27,25 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.http.ContentType;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.cloud.openfeign.support.ResponseEntityDecoder;
 import org.springframework.cloud.openfeign.support.SpringMvcContract;
 import org.springframework.core.env.Environment;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.tosan.client.http.core.Constants.*;
 
-/**
- * @author Ali Alimohammadi
- * @since 7/19/2022
- */
-public abstract class AbstractFeignConfiguration {
-
+public abstract class AbstractFeignConfiguration implements DisposableBean {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(AbstractFeignConfiguration.class);
+    private final List<CloseableHttpClient> closeableHttpClients = Collections.synchronizedList(new ArrayList<>());
     private final ObjectMapper defaultObjectMapper = createDefaultObjectMapper();
     private final JsonReplaceHelperDecider jsonReplaceHelperDecider;
 
@@ -92,14 +92,15 @@ public abstract class AbstractFeignConfiguration {
         return factory.createBuilder().build();
     }
 
-    protected Client wrapHttpClient(HttpClient httpClient) {
-        return new ApacheHttp5Client(httpClient);
+    protected Client wrapHttpClient(CloseableHttpClient closeableHttpClient) {
+        closeableHttpClients.add(closeableHttpClient);
+        return new ApacheHttp5Client(closeableHttpClient);
     }
 
     protected List<RequestInterceptor> createRequestInterceptors(HttpClientProperties properties) {
         List<RequestInterceptor> interceptors = new ArrayList<>();
         interceptors.add(createDefaultRequestInterceptor());
-        if (properties.getAuthorization().isEnable()) {
+        if (properties.getAuthorization() != null && properties.getAuthorization().isEnable()) {
             interceptors.add(createBasicAuthInterceptor(properties));
         }
         return interceptors;
@@ -216,5 +217,19 @@ public abstract class AbstractFeignConfiguration {
 
     protected final <T> T createFeignClient(Environment environment, Class<T> clientType) {
         return createFeignClient(environment, null, clientType);
+    }
+
+    @Override
+    public void destroy() {
+        synchronized (closeableHttpClients) {
+            closeableHttpClients.forEach(closeableHttpClient -> {
+                LOG.info("Closing HTTP client connections for service: {}", getExternalServiceName());
+                try {
+                    closeableHttpClient.close();
+                } catch (IOException e) {
+                    LOG.error("Closing HTTP client connection failed ", e);
+                }
+            });
+        }
     }
 }
