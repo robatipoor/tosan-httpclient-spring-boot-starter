@@ -70,7 +70,7 @@ public abstract class AbstractHttpClientConfiguration implements DisposableBean 
         return new TosanHttpClientObservationConvention().externalName(getExternalServiceName());
     }
 
-    protected RestClient createRestClient(HttpClientProperties properties) {
+    private RestClient createRestClient(HttpClientProperties properties) {
         return RestClient.builder()
                 .configureMessageConverters(this::configureMessageConverters)
                 .requestFactory(createRequestFactory(properties))
@@ -91,7 +91,7 @@ public abstract class AbstractHttpClientConfiguration implements DisposableBean 
         return factory.createBuilder().build();
     }
 
-    protected ClientHttpRequestFactory createRequestFactory(HttpClientProperties properties) {
+    private ClientHttpRequestFactory createRequestFactory(HttpClientProperties properties) {
         CloseableHttpClient closeableHttpClient = createHttpClient(properties);
         closeableHttpClients.add(closeableHttpClient);
         return new HttpComponentsClientHttpRequestFactory(closeableHttpClient);
@@ -138,7 +138,7 @@ public abstract class AbstractHttpClientConfiguration implements DisposableBean 
                 try {
                     closeableHttpClient.close();
                 } catch (IOException e) {
-                    LOG.error("Closing HTTP client connection failed ", e);
+                    LOG.error("Failed to close the HTTP client connection", e);
                 }
             });
         }

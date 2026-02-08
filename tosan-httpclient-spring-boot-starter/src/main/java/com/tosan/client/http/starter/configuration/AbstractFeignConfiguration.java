@@ -35,6 +35,7 @@ import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.cloud.openfeign.support.ResponseEntityDecoder;
 import org.springframework.cloud.openfeign.support.SpringMvcContract;
 import org.springframework.core.env.Environment;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -84,15 +85,12 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
         HttpClientBuilder builder = HttpClientBuilder.create();
         PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder =
                 PoolingHttpClientConnectionManagerBuilder.create();
-
         ConfigurableApacheHttpClientFactory factory = new ConfigurableApacheHttpClientFactory(
                 builder, connectionManagerBuilder, properties);
-
-        // TODO: Implement proper resource management for CloseableHttpClient
         return factory.createBuilder().build();
     }
 
-    protected Client wrapHttpClient(CloseableHttpClient closeableHttpClient) {
+    private Client wrapHttpClient(CloseableHttpClient closeableHttpClient) {
         closeableHttpClients.add(closeableHttpClient);
         return new ApacheHttp5Client(closeableHttpClient);
     }
@@ -144,7 +142,7 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
         return List.of(new MicrometerObservationCapability(observationRegistry, convention));
     }
 
-    protected Feign.Builder feignBuilder(HttpClientProperties httpClientProperties) {
+    private Feign.Builder feignBuilder(HttpClientProperties httpClientProperties) {
         ObjectMapper objectMapper = createObjectMapper();
         Feign.Builder feignBuilder = Feign.builder()
                 .client(wrapHttpClient(createFeignHttpClient(
@@ -171,7 +169,7 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
         }
     }
 
-    protected final RequestInterceptor createDefaultRequestInterceptor() {
+    private RequestInterceptor createDefaultRequestInterceptor() {
         return requestTemplate -> {
             requestTemplate.header(ACCEPT_HEADER, ContentType.APPLICATION_JSON.getMimeType());
             requestTemplate.header(CONTENT_TYPE_HEADER, ContentType.APPLICATION_JSON.getMimeType());
@@ -180,14 +178,14 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
         };
     }
 
-    protected final void addMdcHeaderIfPresent(RequestTemplate requestTemplate, String mdcKey, String headerName) {
+    private void addMdcHeaderIfPresent(RequestTemplate requestTemplate, String mdcKey, String headerName) {
         String mdcValue = MDC.get(mdcKey);
         if (mdcValue != null) {
             requestTemplate.header(headerName, mdcValue);
         }
     }
 
-    protected final RequestInterceptor createBasicAuthInterceptor(HttpClientProperties properties) {
+    private RequestInterceptor createBasicAuthInterceptor(HttpClientProperties properties) {
         HttpClientProperties.AuthorizationConfiguration authConfig = properties.getAuthorization();
         return new BasicAuthRequestInterceptor(
                 authConfig.getUsername(),
@@ -227,7 +225,7 @@ public abstract class AbstractFeignConfiguration implements DisposableBean {
                 try {
                     closeableHttpClient.close();
                 } catch (IOException e) {
-                    LOG.error("Closing HTTP client connection failed ", e);
+                    LOG.error("Failed to close the HTTP client connection", e);
                 }
             });
         }
