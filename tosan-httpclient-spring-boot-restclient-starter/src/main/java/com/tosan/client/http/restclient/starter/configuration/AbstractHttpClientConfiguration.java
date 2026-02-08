@@ -19,6 +19,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.observation.DefaultClientRequestObservationConvention;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
@@ -66,7 +67,7 @@ public abstract class AbstractHttpClientConfiguration implements DisposableBean 
         return ObservationRegistry.create();
     }
 
-    protected TosanHttpClientObservationConvention createObservationConvention() {
+    protected DefaultClientRequestObservationConvention createObservationConvention() {
         return new TosanHttpClientObservationConvention().externalName(getExternalServiceName());
     }
 
