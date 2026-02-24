@@ -32,10 +32,12 @@ public abstract class AbstractRestClientConfiguration {
 
     private final ObservationRegistry observationRegistry;
     private final HttpLoggingInterceptorUtil httpLoggingInterceptorUtil;
+    private final RestClient.Builder builder;
 
-    protected AbstractRestClientConfiguration(ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
+    protected AbstractRestClientConfiguration(RestClient.Builder builder, ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
         this.observationRegistry = observationRegistry;
         this.httpLoggingInterceptorUtil = httpLoggingInterceptorUtil;
+        this.builder = builder;
     }
 
     protected abstract String getExternalServiceName();
@@ -45,9 +47,13 @@ public abstract class AbstractRestClientConfiguration {
     protected HttpClientProperties loadHttpClientProperties(Environment environment) {
         HttpClientProperties properties = new HttpClientProperties();
         Binder binder = Binder.get(environment);
-        String propertyPrefix = getExternalServiceName() + ".client";
+        String propertyPrefix = getExternalServiceName() + "." + pathProperties();
         binder.bind(propertyPrefix, Bindable.ofInstance(properties));
         return properties;
+    }
+
+    protected String pathProperties() {
+        return "client";
     }
 
     protected void validateProperties(HttpClientProperties properties) {
@@ -64,8 +70,7 @@ public abstract class AbstractRestClientConfiguration {
 
     protected ClientService createClientService(HttpClientProperties properties) {
         HttpComponentsClientHttpRequestFactory httpComponentsClientHttpRequestFactory = createRequestFactory(properties);
-        RestClient restClient = RestClient.builder()
-                .configureMessageConverters(this::configureMessageConverters)
+        RestClient restClient = builder.configureMessageConverters(this::configureMessageConverters)
                 .requestFactory(httpComponentsClientHttpRequestFactory)
                 .requestInterceptors(interceptors ->
                         interceptors.addAll(createInterceptors(properties)))

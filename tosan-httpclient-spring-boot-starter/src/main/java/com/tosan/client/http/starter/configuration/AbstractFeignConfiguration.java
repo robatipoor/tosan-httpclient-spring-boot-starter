@@ -59,8 +59,12 @@ public abstract class AbstractFeignConfiguration {
     protected HttpClientProperties loadHttpClientProperties(Environment environment) {
         HttpClientProperties properties = new HttpClientProperties();
         Binder binder = Binder.get(environment);
-        binder.bind(getExternalServiceName() + ".client", Bindable.ofInstance(properties));
+        binder.bind(getExternalServiceName() + "." + pathProperties(), Bindable.ofInstance(properties));
         return properties;
+    }
+
+    protected String pathProperties() {
+        return "client";
     }
 
     protected ObjectMapper createObjectMapper() {

@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestClient;
 
 /**
  * @author Ali Alimohammadi
@@ -19,8 +20,8 @@ public class ExternalServiceConfiguration extends AbstractRestClientConfiguratio
 
     public static final String SERVICE_NAME = "custom-web-service1";
 
-    public ExternalServiceConfiguration(ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
-        super(observationRegistry, httpLoggingInterceptorUtil);
+    public ExternalServiceConfiguration(RestClient.Builder builder, ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
+        super(builder, observationRegistry, httpLoggingInterceptorUtil);
     }
 
     @Bean(SERVICE_NAME)
