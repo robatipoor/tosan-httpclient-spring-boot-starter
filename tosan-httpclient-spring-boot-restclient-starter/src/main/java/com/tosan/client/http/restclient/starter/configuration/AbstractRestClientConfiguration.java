@@ -7,6 +7,7 @@ import com.tosan.client.http.restclient.starter.impl.ClientService;
 import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
 import com.tosan.client.http.restclient.starter.impl.interceptor.HttpLoggingInterceptor;
 import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
+import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
@@ -31,13 +32,13 @@ import java.util.List;
 public abstract class AbstractRestClientConfiguration {
 
     private final ObservationRegistry observationRegistry;
-    private final HttpLoggingInterceptorUtil httpLoggingInterceptorUtil;
+    private final JsonReplaceHelperDecider jacksonReplaceHelper;
     private final RestClient.Builder builder;
 
-    protected AbstractRestClientConfiguration(RestClient.Builder builder, ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
-        this.observationRegistry = observationRegistry;
-        this.httpLoggingInterceptorUtil = httpLoggingInterceptorUtil;
+    protected AbstractRestClientConfiguration(RestClient.Builder builder, ObservationRegistry observationRegistry, JsonReplaceHelperDecider jacksonReplaceHelper) {
         this.builder = builder;
+        this.observationRegistry = observationRegistry;
+        this.jacksonReplaceHelper = jacksonReplaceHelper;
     }
 
     protected abstract String getExternalServiceName();
@@ -109,7 +110,7 @@ public abstract class AbstractRestClientConfiguration {
     }
 
     private ClientHttpRequestInterceptor createLoggingInterceptor() {
-        return new HttpLoggingInterceptor(httpLoggingInterceptorUtil, getExternalServiceName());
+        return new HttpLoggingInterceptor(new HttpLoggingInterceptorUtil(jacksonReplaceHelper), getExternalServiceName());
     }
 
     private ClientHttpRequestInterceptor createBasicAuthInterceptor(HttpClientProperties properties) {

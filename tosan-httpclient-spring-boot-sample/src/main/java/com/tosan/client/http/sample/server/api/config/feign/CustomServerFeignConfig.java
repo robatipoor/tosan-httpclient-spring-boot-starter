@@ -12,12 +12,16 @@ import com.tosan.client.http.starter.impl.feign.ExternalServiceInvoker;
 import com.tosan.client.http.starter.impl.feign.exception.TosanWebServiceRuntimeException;
 import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
 import feign.*;
+import feign.codec.Decoder;
+import feign.codec.Encoder;
 import io.micrometer.observation.ObservationRegistry;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.cloud.openfeign.FeignClientsConfiguration;
 import org.springframework.cloud.openfeign.support.SpringMvcContract;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import org.springframework.format.support.FormattingConversionService;
 
@@ -28,13 +32,20 @@ import java.util.List;
  * @since 4/18/2021
  */
 @Configuration
-@EnableFeignClients
+//@EnableFeignClients
 @Slf4j
+@Import(FeignClientsConfiguration.class)
 public class CustomServerFeignConfig extends AbstractFeignConfiguration {
     public static final String SERVICE_NAME = "custom-web-service2";
 
-    public CustomServerFeignConfig(ObservationRegistry observationRegistry, JsonReplaceHelperDecider jsonReplaceHelperDecider) {
-        super(observationRegistry, jsonReplaceHelperDecider);
+    public CustomServerFeignConfig(
+            ObservationRegistry observationRegistry,
+            JsonReplaceHelperDecider jacksonReplaceHelper,
+            ObjectProvider<Feign.Builder> builderProvider,
+            Encoder encoder,
+            Decoder decoder,
+            Contract contract) {
+        super(observationRegistry, jacksonReplaceHelper, builderProvider, encoder, decoder, contract);
     }
 
     @Bean(SERVICE_NAME)

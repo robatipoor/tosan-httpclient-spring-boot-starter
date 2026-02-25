@@ -4,6 +4,7 @@ import com.tosan.client.http.restclient.starter.configuration.AbstractRestClient
 import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
 import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
 import com.tosan.client.http.sample.restclient.exception.ExceptionHandler;
+import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,8 +21,8 @@ public class ExternalServiceConfiguration extends AbstractRestClientConfiguratio
 
     public static final String SERVICE_NAME = "custom-web-service1";
 
-    public ExternalServiceConfiguration(RestClient.Builder builder, ObservationRegistry observationRegistry, HttpLoggingInterceptorUtil httpLoggingInterceptorUtil) {
-        super(builder, observationRegistry, httpLoggingInterceptorUtil);
+    public ExternalServiceConfiguration(RestClient.Builder builder, ObservationRegistry observationRegistry, JsonReplaceHelperDecider jacksonReplaceHelper) {
+        super(builder, observationRegistry, jacksonReplaceHelper);
     }
 
     @Bean(SERVICE_NAME)

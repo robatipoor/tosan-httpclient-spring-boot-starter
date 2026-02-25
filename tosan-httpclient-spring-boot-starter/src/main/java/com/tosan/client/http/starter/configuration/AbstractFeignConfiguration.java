@@ -18,10 +18,7 @@ import feign.auth.BasicAuthRequestInterceptor;
 import feign.codec.Decoder;
 import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
-import feign.form.spring.SpringFormEncoder;
 import feign.hc5.ApacheHttp5Client;
-import feign.jackson.JacksonDecoder;
-import feign.jackson.JacksonEncoder;
 import feign.micrometer.MicrometerObservationCapability;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -29,10 +26,9 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.cloud.openfeign.support.ResponseEntityDecoder;
-import org.springframework.cloud.openfeign.support.SpringMvcContract;
 import org.springframework.core.env.Environment;
 
 import java.nio.charset.StandardCharsets;
@@ -46,10 +42,25 @@ public abstract class AbstractFeignConfiguration {
     private final ObservationRegistry observationRegistry;
     private final ObjectMapper defaultObjectMapper = createDefaultObjectMapper();
     private final JsonReplaceHelperDecider jsonReplaceHelperDecider;
+    private final ObjectProvider<Feign.Builder> builderProvider;
+    private final Encoder encoder;
+    private final Decoder decoder;
+    private final Contract contract;
 
-    protected AbstractFeignConfiguration(ObservationRegistry observationRegistry, JsonReplaceHelperDecider jacksonReplaceHelper) {
+    protected AbstractFeignConfiguration(
+            ObservationRegistry observationRegistry,
+            JsonReplaceHelperDecider jacksonReplaceHelper,
+            ObjectProvider<Feign.Builder> builderProvider,
+            Encoder encoder,
+            Decoder decoder,
+            Contract contract
+    ) {
         this.observationRegistry = observationRegistry;
         this.jsonReplaceHelperDecider = jacksonReplaceHelper;
+        this.builderProvider = builderProvider;
+        this.encoder = encoder;
+        this.decoder = decoder;
+        this.contract = contract;
     }
 
     protected abstract String getExternalServiceName();
@@ -102,15 +113,15 @@ public abstract class AbstractFeignConfiguration {
     }
 
     protected Encoder createEncoder(ObjectMapper objectMapper) {
-        return new SpringFormEncoder(new JacksonEncoder(objectMapper));
+        return encoder;
     }
 
     protected Decoder createDecoder(ObjectMapper objectMapper) {
-        return new ResponseEntityDecoder(new JacksonDecoder(objectMapper));
+        return decoder;
     }
 
     protected Contract createContract(ObjectMapper objectMapper) {
-        return new SpringMvcContract();
+        return contract;
     }
 
     protected ErrorDecoder createErrorDecoder(ObjectMapper objectMapper) {
@@ -142,7 +153,7 @@ public abstract class AbstractFeignConfiguration {
     protected FeignBuilder createFeignBuilder(HttpClientProperties httpClientProperties) {
         CloseableHttpClient closeableHttpClient = createFeignHttpClient(httpClientProperties);
         ObjectMapper objectMapper = createObjectMapper();
-        Feign.Builder feignBuilder = Feign.builder()
+        Feign.Builder feignBuilder = builderProvider.getIfAvailable()
                 .client(wrapHttpClient(closeableHttpClient))
                 .options(createRequestOptions(httpClientProperties))
                 .encoder(createEncoder(objectMapper))
