@@ -31,6 +31,7 @@ import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -53,7 +54,7 @@ public abstract class AbstractFeignConfiguration<P extends HttpClientProperties>
     private final Class<P> propertiesClass;
 
     protected AbstractFeignConfiguration(
-            String serviceName,  Class<P> propertiesClass,ObservationRegistry observationRegistry,
+            String serviceName, Class<P> propertiesClass, ObservationRegistry observationRegistry,
             JsonReplaceHelperDecider jacksonReplaceHelper,
             ObjectProvider<Feign.Builder> builderProvider, Encoder encoder, Decoder decoder, Contract contract
     ) {
@@ -163,7 +164,13 @@ public abstract class AbstractFeignConfiguration<P extends HttpClientProperties>
     protected FeignBuilder createFeignBuilder(P httpClientProperties) {
         CloseableHttpClient closeableHttpClient = createFeignHttpClient(httpClientProperties);
         ObjectMapper objectMapper = createObjectMapper();
-        Feign.Builder feignBuilder = builderProvider.getIfAvailable()
+        Feign.Builder feignBuilder = builderProvider.getIfAvailable();
+        if (feignBuilder == null) {
+            throw new FeignConfigurationException(
+                    "No Feign.Builder bean found"
+            );
+        }
+        feignBuilder = feignBuilder
                 .client(wrapHttpClient(closeableHttpClient))
                 .options(createRequestOptions(httpClientProperties))
                 .encoder(createEncoder(objectMapper))
@@ -228,9 +235,12 @@ public abstract class AbstractFeignConfiguration<P extends HttpClientProperties>
                 .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
     }
 
-    private String buildTargetUrl(HttpClientProperties properties, String controllerPath) {
+    private String buildTargetUrl(P properties, String controllerPath) {
         String baseUrl = properties.getBaseServiceUrl();
-        return controllerPath != null ? baseUrl + controllerPath : baseUrl;
+        if (!StringUtils.hasText(controllerPath)) {
+            return baseUrl;
+        }
+        return UriComponentsBuilder.fromUriString(baseUrl).path(controllerPath).build().toUriString();
     }
 
     protected final <T> ExternalServiceInvoker<T> createServiceInvoker(Environment environment, String controllerPath, Class<T> clientType) {
