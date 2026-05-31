@@ -21,46 +21,71 @@ import org.springframework.http.client.observation.DefaultClientRequestObservati
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.http.converter.HttpMessageConverters;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 
-public abstract class AbstractRestClientConfiguration {
+public abstract class AbstractRestClientConfiguration<P extends HttpClientProperties> {
 
+    private final String serviceName;
+    private static final String DEFAULT_PROPERTIES_PATH = "client";
     private final ObservationRegistry observationRegistry;
     private final JsonReplaceHelperDecider jacksonReplaceHelper;
     private final RestClient.Builder builder;
+    private final Class<P> propertiesClass;
 
-    protected AbstractRestClientConfiguration(RestClient.Builder builder, ObservationRegistry observationRegistry, JsonReplaceHelperDecider jacksonReplaceHelper) {
+    protected AbstractRestClientConfiguration(String serviceName, Class<P> propertiesClass, RestClient.Builder builder,
+                                              ObservationRegistry observationRegistry,
+                                              JsonReplaceHelperDecider jacksonReplaceHelper) {
+        this.serviceName = serviceName;
+        this.propertiesClass = propertiesClass;
         this.builder = builder;
         this.observationRegistry = observationRegistry;
         this.jacksonReplaceHelper = jacksonReplaceHelper;
+
     }
 
-    protected abstract String getExternalServiceName();
+    protected final String getExternalServiceName() {
+        return this.serviceName;
+    }
 
     protected abstract ResponseErrorHandler createResponseErrorHandler();
 
-    protected HttpClientProperties loadHttpClientProperties(Environment environment) {
-        HttpClientProperties properties = new HttpClientProperties();
-        Binder binder = Binder.get(environment);
-        String propertyPrefix = getExternalServiceName() + "." + pathProperties();
-        binder.bind(propertyPrefix, Bindable.ofInstance(properties));
-        return properties;
+    protected P loadHttpClientProperties(Environment environment) {
+        String propertyPrefix =
+                getExternalServiceName() + "." + pathProperties();
+        return Binder.get(environment)
+                .bind(propertyPrefix, Bindable.of(this.propertiesClass))
+                .orElseThrow(() ->
+                        new RestClientConfigurationException(
+                                "Configuration not found for prefix: " + propertyPrefix
+                        ));
     }
 
     protected String pathProperties() {
-        return "client";
+        return DEFAULT_PROPERTIES_PATH;
     }
 
-    protected void validateProperties(HttpClientProperties properties) {
-        if (properties.getBaseServiceUrl() == null) {
+    protected void validateProperties(P properties) {
+        if (!StringUtils.hasText(properties.getBaseServiceUrl())) {
             throw new RestClientConfigurationException(
-                    "Base service URL for rest client cannot be null for service: " + getExternalServiceName()
+                    "Base service URL is required for service: "
+                            + getExternalServiceName()
+            );
+        }
+        try {
+            URI.create(properties.getBaseServiceUrl());
+        } catch (Exception ex) {
+            throw new RestClientConfigurationException(
+                    "Invalid base service URL for service: "
+                            + getExternalServiceName(),
+                    ex
             );
         }
     }
@@ -69,20 +94,28 @@ public abstract class AbstractRestClientConfiguration {
         return new TosanHttpClientObservationConvention().externalName(getExternalServiceName());
     }
 
-    protected ClientService createClientService(HttpClientProperties properties) {
-        HttpComponentsClientHttpRequestFactory httpComponentsClientHttpRequestFactory = createRequestFactory(properties);
-        RestClient restClient = builder.configureMessageConverters(this::configureMessageConverters)
-                .requestFactory(httpComponentsClientHttpRequestFactory)
+    protected ClientService createClientService(P properties) {
+        HttpComponentsClientHttpRequestFactory requestFactory = createRequestFactory(properties);
+        RestClient.Builder builder = this.builder.clone();
+        customizeRestClient(builder, properties);
+        RestClient restClient = builder
+                .configureMessageConverters(this::configureMessageConverters)
+                .requestFactory(requestFactory)
                 .requestInterceptors(interceptors ->
                         interceptors.addAll(createInterceptors(properties)))
                 .defaultStatusHandler(createResponseErrorHandler())
                 .observationRegistry(observationRegistry)
                 .observationConvention(createObservationConvention())
                 .build();
-        return new ClientService(restClient, httpComponentsClientHttpRequestFactory);
+        return new ClientService(restClient, requestFactory);
     }
 
-    protected CloseableHttpClient createHttpClient(HttpClientProperties properties) {
+    protected void customizeRestClient(
+            RestClient.Builder builder,
+            P properties) {
+    }
+
+    protected CloseableHttpClient createHttpClient(P properties) {
         HttpClientBuilder builder = HttpClientBuilder.create();
         PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder =
                 PoolingHttpClientConnectionManagerBuilder.create();
@@ -91,15 +124,17 @@ public abstract class AbstractRestClientConfiguration {
         return factory.createBuilder().build();
     }
 
-    protected HttpComponentsClientHttpRequestFactory createRequestFactory(HttpClientProperties properties) {
-        CloseableHttpClient closeableHttpClient = createHttpClient(properties);
-        return new HttpComponentsClientHttpRequestFactory(closeableHttpClient);
+    protected HttpComponentsClientHttpRequestFactory createRequestFactory(P properties) {
+        return new HttpComponentsClientHttpRequestFactory(
+                createHttpClient(properties)
+        );
     }
 
-    protected List<ClientHttpRequestInterceptor> createInterceptors(HttpClientProperties properties) {
+    protected List<ClientHttpRequestInterceptor> createInterceptors(P properties) {
         List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
         interceptors.add(createLoggingInterceptor());
-        if (properties.getAuthorization() != null && properties.getAuthorization().isEnable()) {
+        HttpClientProperties.AuthorizationConfiguration auth = properties.getAuthorization();
+        if (auth != null && auth.isEnable()) {
             interceptors.add(createBasicAuthInterceptor(properties));
         }
         return interceptors;
@@ -113,7 +148,7 @@ public abstract class AbstractRestClientConfiguration {
         return new HttpLoggingInterceptor(new HttpLoggingInterceptorUtil(jacksonReplaceHelper), getExternalServiceName());
     }
 
-    private ClientHttpRequestInterceptor createBasicAuthInterceptor(HttpClientProperties properties) {
+    private ClientHttpRequestInterceptor createBasicAuthInterceptor(P properties) {
         HttpClientProperties.AuthorizationConfiguration authConfig = properties.getAuthorization();
         return new BasicAuthenticationInterceptor(
                 authConfig.getUsername(),
@@ -122,8 +157,13 @@ public abstract class AbstractRestClientConfiguration {
         );
     }
 
-    protected final ExternalServiceInvoker createServiceInvoker(Environment environment) {
-        HttpClientProperties properties = loadHttpClientProperties(environment);
+    public final ExternalServiceInvoker createServiceInvoker(Environment environment) {
+        P properties = loadHttpClientProperties(environment);
+        validateProperties(properties);
+        return new ExternalServiceInvoker(createClientService(properties), properties);
+    }
+
+    public final ExternalServiceInvoker createServiceInvoker(P properties) {
         validateProperties(properties);
         return new ExternalServiceInvoker(createClientService(properties), properties);
     }

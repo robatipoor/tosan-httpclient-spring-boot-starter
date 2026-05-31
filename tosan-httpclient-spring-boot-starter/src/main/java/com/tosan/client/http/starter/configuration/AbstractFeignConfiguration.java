@@ -30,15 +30,19 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
+import org.springframework.util.StringUtils;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.tosan.client.http.core.Constants.*;
 
-public abstract class AbstractFeignConfiguration {
+public abstract class AbstractFeignConfiguration<P extends HttpClientProperties> {
 
+    private final String serviceName;
+    private static final String DEFAULT_PROPERTIES_PATH = "client";
     private final ObservationRegistry observationRegistry;
     private final ObjectMapper defaultObjectMapper = createDefaultObjectMapper();
     private final JsonReplaceHelperDecider jsonReplaceHelperDecider;
@@ -46,36 +50,42 @@ public abstract class AbstractFeignConfiguration {
     private final Encoder encoder;
     private final Decoder decoder;
     private final Contract contract;
+    private final Class<P> propertiesClass;
 
     protected AbstractFeignConfiguration(
-            ObservationRegistry observationRegistry,
+            String serviceName,  Class<P> propertiesClass,ObservationRegistry observationRegistry,
             JsonReplaceHelperDecider jacksonReplaceHelper,
-            ObjectProvider<Feign.Builder> builderProvider,
-            Encoder encoder,
-            Decoder decoder,
-            Contract contract
+            ObjectProvider<Feign.Builder> builderProvider, Encoder encoder, Decoder decoder, Contract contract
     ) {
+        this.serviceName = serviceName;
         this.observationRegistry = observationRegistry;
         this.jsonReplaceHelperDecider = jacksonReplaceHelper;
         this.builderProvider = builderProvider;
         this.encoder = encoder;
         this.decoder = decoder;
         this.contract = contract;
+        this.propertiesClass = propertiesClass;
     }
 
-    protected abstract String getExternalServiceName();
+    protected final String getExternalServiceName() {
+        return this.serviceName;
+    }
 
     protected abstract CustomErrorDecoderConfig createCustomErrorDecoderConfig(ObjectMapper objectMapper);
 
-    protected HttpClientProperties loadHttpClientProperties(Environment environment) {
-        HttpClientProperties properties = new HttpClientProperties();
-        Binder binder = Binder.get(environment);
-        binder.bind(getExternalServiceName() + "." + pathProperties(), Bindable.ofInstance(properties));
-        return properties;
+    protected P loadHttpClientProperties(Environment environment) {
+        String propertyPrefix =
+                getExternalServiceName() + "." + pathProperties();
+        return Binder.get(environment)
+                .bind(propertyPrefix, Bindable.of(this.propertiesClass))
+                .orElseThrow(() ->
+                        new FeignConfigurationException(
+                                "Configuration not found for prefix: " + propertyPrefix
+                        ));
     }
 
     protected String pathProperties() {
-        return "client";
+        return DEFAULT_PROPERTIES_PATH;
     }
 
     protected ObjectMapper createObjectMapper() {
@@ -90,7 +100,7 @@ public abstract class AbstractFeignConfiguration {
         return Logger.Level.FULL;
     }
 
-    protected CloseableHttpClient createFeignHttpClient(HttpClientProperties properties) {
+    protected CloseableHttpClient createFeignHttpClient(P properties) {
         HttpClientBuilder builder = HttpClientBuilder.create();
         PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder =
                 PoolingHttpClientConnectionManagerBuilder.create();
@@ -103,7 +113,7 @@ public abstract class AbstractFeignConfiguration {
         return new ApacheHttp5Client(closeableHttpClient);
     }
 
-    protected List<RequestInterceptor> createRequestInterceptors(HttpClientProperties properties) {
+    protected List<RequestInterceptor> createRequestInterceptors(P properties) {
         List<RequestInterceptor> interceptors = new ArrayList<>();
         interceptors.add(createDefaultRequestInterceptor());
         if (properties.getAuthorization() != null && properties.getAuthorization().isEnable()) {
@@ -133,7 +143,7 @@ public abstract class AbstractFeignConfiguration {
         return Retryer.NEVER_RETRY;
     }
 
-    protected Request.Options createRequestOptions(HttpClientProperties properties) {
+    protected Request.Options createRequestOptions(P properties) {
         HttpClientProperties.ConnectionConfiguration connectionConfig = properties.getConnection();
         return new Request.Options(
                 connectionConfig.getConnectionTimeout(),
@@ -150,7 +160,7 @@ public abstract class AbstractFeignConfiguration {
         return List.of(new MicrometerObservationCapability(observationRegistry, convention));
     }
 
-    protected FeignBuilder createFeignBuilder(HttpClientProperties httpClientProperties) {
+    protected FeignBuilder createFeignBuilder(P httpClientProperties) {
         CloseableHttpClient closeableHttpClient = createFeignHttpClient(httpClientProperties);
         ObjectMapper objectMapper = createObjectMapper();
         Feign.Builder feignBuilder = builderProvider.getIfAvailable()
@@ -168,10 +178,20 @@ public abstract class AbstractFeignConfiguration {
         return new FeignBuilder(feignBuilder, closeableHttpClient);
     }
 
-    protected void validateProperties(HttpClientProperties properties) {
-        if (properties.getBaseServiceUrl() == null) {
+    protected void validateProperties(P properties) {
+        if (!StringUtils.hasText(properties.getBaseServiceUrl())) {
             throw new FeignConfigurationException(
-                    "Base service URL for Feign client cannot be null for service: " + getExternalServiceName()
+                    "Base service URL is required for service: "
+                            + getExternalServiceName()
+            );
+        }
+        try {
+            URI.create(properties.getBaseServiceUrl());
+        } catch (Exception ex) {
+            throw new FeignConfigurationException(
+                    "Invalid base service URL for service: "
+                            + getExternalServiceName(),
+                    ex
             );
         }
     }
@@ -192,7 +212,7 @@ public abstract class AbstractFeignConfiguration {
         }
     }
 
-    private RequestInterceptor createBasicAuthInterceptor(HttpClientProperties properties) {
+    private RequestInterceptor createBasicAuthInterceptor(P properties) {
         HttpClientProperties.AuthorizationConfiguration authConfig = properties.getAuthorization();
         return new BasicAuthRequestInterceptor(
                 authConfig.getUsername(),
@@ -214,7 +234,7 @@ public abstract class AbstractFeignConfiguration {
     }
 
     protected final <T> ExternalServiceInvoker<T> createServiceInvoker(Environment environment, String controllerPath, Class<T> clientType) {
-        HttpClientProperties properties = loadHttpClientProperties(environment);
+        P properties = loadHttpClientProperties(environment);
         validateProperties(properties);
         FeignBuilder feignBuilder = createFeignBuilder(properties);
         return new ExternalServiceInvoker<T>(
@@ -225,5 +245,18 @@ public abstract class AbstractFeignConfiguration {
 
     protected final <T> ExternalServiceInvoker<T> createServiceInvoker(Environment environment, Class<T> clientType) {
         return createServiceInvoker(environment, null, clientType);
+    }
+
+    protected final <T> ExternalServiceInvoker<T> createServiceInvoker(P properties, String controllerPath, Class<T> clientType) {
+        validateProperties(properties);
+        FeignBuilder feignBuilder = createFeignBuilder(properties);
+        return new ExternalServiceInvoker<T>(
+                feignBuilder.getFeignBuilder().target(clientType, buildTargetUrl(properties, controllerPath)),
+                feignBuilder.getHttpClient()
+        );
+    }
+
+    protected final <T> ExternalServiceInvoker<T> createServiceInvoker(P properties, Class<T> clientType) {
+        return createServiceInvoker(properties, null, clientType);
     }
 }

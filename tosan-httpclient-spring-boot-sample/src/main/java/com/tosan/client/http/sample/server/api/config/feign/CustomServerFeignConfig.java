@@ -2,6 +2,7 @@ package com.tosan.client.http.sample.server.api.config.feign;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tosan.client.http.core.HttpClientProperties;
 import com.tosan.client.http.sample.server.api.controller.CustomServerRestController;
 import com.tosan.client.http.sample.server.api.exception.CustomServerException;
 import com.tosan.client.http.sample.server.api.model.Context;
@@ -35,7 +36,7 @@ import java.util.List;
 //@EnableFeignClients
 @Slf4j
 @Import(FeignClientsConfiguration.class)
-public class CustomServerFeignConfig extends AbstractFeignConfiguration {
+public class CustomServerFeignConfig extends AbstractFeignConfiguration<HttpClientProperties> {
     public static final String SERVICE_NAME = "custom-web-service2";
 
     public CustomServerFeignConfig(
@@ -45,17 +46,13 @@ public class CustomServerFeignConfig extends AbstractFeignConfiguration {
             Encoder encoder,
             Decoder decoder,
             Contract contract) {
-        super(observationRegistry, jacksonReplaceHelper, builderProvider, encoder, decoder, contract);
+        super(SERVICE_NAME, HttpClientProperties.class, observationRegistry, jacksonReplaceHelper,
+                builderProvider, encoder, decoder, contract);
     }
 
     @Bean(SERVICE_NAME)
     public ExternalServiceInvoker<CustomServerRestController> serviceInvokerBean(Environment environment) {
         return createServiceInvoker(environment, CustomServerRestController.PATH, CustomServerRestController.class);
-    }
-
-    @Override
-    public String getExternalServiceName() {
-        return SERVICE_NAME;
     }
 
     @Override
