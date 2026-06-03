@@ -8,8 +8,8 @@
         <version>3.5.7-SNAPSHOT</version>
     </parent>
 
-    <artifactId>tosan-httpclient-spring-boot-starter</artifactId>
-    <name>tosan-httpclient-spring-boot-starter</name>
+    <artifactId>tosan-httpclient-spring-boot-feignclient-starter</artifactId>
+    <name>tosan-httpclient-spring-boot-feignclient-starter</name>
     <packaging>jar</packaging>
 
     <dependencies>

@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>com.tosan.client.http</groupId>
-            <artifactId>tosan-httpclient-spring-boot-starter</artifactId>
+            <artifactId>tosan-httpclient-spring-boot-feignclient-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

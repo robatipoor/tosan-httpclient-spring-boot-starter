@@ -15,7 +15,6 @@ import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
 import com.tosan.tools.mask.starter.replace.RegexReplaceHelper;
 import feign.Feign;
 import feign.codec.ErrorDecoder;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;

@@ -16,7 +16,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.http.HttpHeaders;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Ali Alimohammadi
@@ -45,7 +47,8 @@ public class RestClientSpringBootApplication implements CommandLineRunner {
      */
     @Override
     public void run(String... args) {
-        HttpHeaders httpHeaders = new HttpHeaders();
+        Map<String,String> httpHeaders = new HashMap<>();
+        httpHeaders.put("Test","test");
         GetInfoRequestDto request = new GetInfoRequestDto();
         request.setSsn("123456789");
         GetInfoResponseDto response;
