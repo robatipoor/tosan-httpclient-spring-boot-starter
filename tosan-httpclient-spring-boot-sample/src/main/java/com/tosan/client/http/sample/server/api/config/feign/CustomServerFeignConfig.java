@@ -33,7 +33,6 @@ import java.util.List;
  * @since 4/18/2021
  */
 @Configuration
-//@EnableFeignClients
 @Slf4j
 @Import(FeignClientsConfiguration.class)
 public class CustomServerFeignConfig extends AbstractFeignConfiguration<HttpClientProperties> {
