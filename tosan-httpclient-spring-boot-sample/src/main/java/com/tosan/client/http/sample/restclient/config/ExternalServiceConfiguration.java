@@ -3,7 +3,6 @@ package com.tosan.client.http.sample.restclient.config;
 import com.tosan.client.http.core.HttpClientProperties;
 import com.tosan.client.http.restclient.starter.configuration.AbstractRestClientConfiguration;
 import com.tosan.client.http.restclient.starter.impl.ExternalServiceInvoker;
-import com.tosan.client.http.restclient.starter.util.HttpLoggingInterceptorUtil;
 import com.tosan.client.http.sample.restclient.exception.ExceptionHandler;
 import com.tosan.tools.mask.starter.replace.JsonReplaceHelperDecider;
 import io.micrometer.observation.ObservationRegistry;
